@@ -1,0 +1,792 @@
+@import "tailwindcss";
+
+/* ============================================================
+   STELLARA DESIGN SYSTEM
+   A modern, minimal, playful, warm/spiritual astrology platform
+   ============================================================ */
+
+@theme {
+  /* --- Space Backgrounds --- */
+  --color-space-900: #050816;
+  --color-space-800: #0a0f2e;
+  --color-space-700: #101640;
+  --color-space-600: #171d54;
+  --color-space-500: #1e2363;
+  --color-space-400: #252973;
+  --color-space-300: #3b3f8f;
+  --color-space-200: #5255ab;
+  --color-space-100: #7577c7;
+
+  /* --- Celestial Primary (Purple Spectrum) --- */
+  --color-celestial-900: #2e1065;
+  --color-celestial-800: #3b0f80;
+  --color-celestial-700: #4c1d95;
+  --color-celestial-600: #5b21b6;
+  --color-celestial-500: #6d28d9;
+  --color-celestial-400: #7C3AED;
+  --color-celestial-300: #8b5cf6;
+  --color-celestial-200: #a78bfa;
+  --color-celestial-100: #c4b5fd;
+  --color-celestial-50: #ede9fe;
+
+  /* --- Stardust Accents (Warm Gold) --- */
+  --color-stardust-900: #78350f;
+  --color-stardust-800: #92400e;
+  --color-stardust-700: #b45309;
+  --color-stardust-600: #d97706;
+  --color-stardust-500: #f59e0b;
+  --color-stardust-400: #FBBF24;
+  --color-stardust-300: #fcd34d;
+  --color-stardust-200: #fde68a;
+  --color-stardust-100: #fef3c7;
+  --color-stardust-50: #fffbeb;
+
+  /* --- Nebula Highlights (Pink) --- */
+  --color-nebula-900: #831843;
+  --color-nebula-800: #9d174d;
+  --color-nebula-700: #be185d;
+  --color-nebula-600: #db2777;
+  --color-nebula-500: #EC4899;
+  --color-nebula-400: #f472b6;
+  --color-nebula-300: #f9a8d4;
+  --color-nebula-200: #fbcfe8;
+  --color-nebula-100: #fce7f3;
+  --color-nebula-50: #fdf2f8;
+
+  /* --- Aurora Success (Green) --- */
+  --color-aurora-900: #064e3b;
+  --color-aurora-800: #065f46;
+  --color-aurora-700: #047857;
+  --color-aurora-600: #059669;
+  --color-aurora-500: #10B981;
+  --color-aurora-400: #34d399;
+  --color-aurora-300: #6ee7b7;
+  --color-aurora-200: #a7f3d0;
+  --color-aurora-100: #d1fae5;
+  --color-aurora-50: #ecfdf5;
+
+  /* --- Neutral / Cosmic Dust --- */
+  --color-dust-900: #111827;
+  --color-dust-800: #1f2937;
+  --color-dust-700: #374151;
+  --color-dust-600: #4b5563;
+  --color-dust-500: #6b7280;
+  --color-dust-400: #9ca3af;
+  --color-dust-300: #d1d5db;
+  --color-dust-200: #e5e7eb;
+  --color-dust-100: #f3f4f6;
+  --color-dust-50: #f9fafb;
+
+  /* --- Semantic Colors --- */
+  --color-background: #050816;
+  --color-foreground: #f0eef6;
+  --color-muted: #9ca3af;
+  --color-border: rgba(124, 58, 237, 0.15);
+  --color-ring: rgba(124, 58, 237, 0.4);
+
+  /* --- Typography --- */
+  --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+
+  /* --- Animation Durations --- */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 3s ease-in-out infinite;
+  --animate-twinkle: twinkle 4s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-zodiac-spin: zodiac-spin 120s linear infinite;
+
+  /* --- Spacing Scale Extensions --- */
+  --spacing-18: 4.5rem;
+  --spacing-88: 22rem;
+  --spacing-128: 32rem;
+
+  /* --- Border Radius --- */
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.5rem;
+
+  /* --- Shadows --- */
+  --shadow-glow-sm: 0 0 10px rgba(124, 58, 237, 0.15);
+  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.2), 0 0 40px rgba(124, 58, 237, 0.1);
+  --shadow-glow-lg: 0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.15), 0 0 100px rgba(124, 58, 237, 0.05);
+  --shadow-glow-gold: 0 0 20px rgba(251, 191, 36, 0.2), 0 0 40px rgba(251, 191, 36, 0.1);
+  --shadow-glow-nebula: 0 0 20px rgba(236, 72, 153, 0.2), 0 0 40px rgba(236, 72, 153, 0.1);
+  --shadow-cosmic: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2), 0 0 20px rgba(124, 58, 237, 0.1);
+}
+
+
+/* ============================================================
+   KEYFRAME ANIMATIONS
+   ============================================================ */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(0.5deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-6px) rotate(-0.5deg);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.2),
+                0 0 30px rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(124, 58, 237, 0.4),
+                0 0 50px rgba(124, 58, 237, 0.2),
+                0 0 80px rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.4);
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes zodiac-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+@keyframes drift {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(10px, -10px);
+  }
+  50% {
+    transform: translate(-5px, -20px);
+  }
+  75% {
+    transform: translate(-15px, -5px);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background-color: #050816;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(236, 72, 153, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(37, 41, 115, 0.15) 0%, transparent 50%);
+  color: #f0eef6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+::selection {
+  background-color: rgba(124, 58, 237, 0.35);
+  color: #fef3c7;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(124, 58, 237, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+
+/* ============================================================
+   CUSTOM SCROLLBAR (Space Themed)
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050816;
+  border-left: 1px solid rgba(124, 58, 237, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7C3AED 0%, #4c1d95 50%, #252973 100%);
+  border-radius: 9999px;
+  border: 2px solid #050816;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 50%, #3b3f8f 100%);
+}
+
+::-webkit-scrollbar-corner {
+  background: #050816;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #7C3AED #050816;
+}
+
+
+/* ============================================================
+   GRADIENT TEXT UTILITIES
+   ============================================================ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #c4b5fd 0%, #7C3AED 30%, #EC4899 70%, #c4b5fd 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #fde68a 0%, #FBBF24 30%, #f59e0b 60%, #fde68a 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+
+/* ============================================================
+   GLASS CARD
+   Frosted glass morphism for content cards
+   ============================================================ */
+
+.glass-card {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.08) 0%,
+    rgba(37, 41, 115, 0.12) 50%,
+    rgba(236, 72, 153, 0.05) 100%
+  );
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  border-radius: 1rem;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.25),
+    0 2px 4px -2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.glass-card-hover {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.08) 0%,
+    rgba(37, 41, 115, 0.12) 50%,
+    rgba(236, 72, 153, 0.05) 100%
+  );
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  border-radius: 1rem;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.25),
+    0 2px 4px -2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(124, 58, 237, 0.3);
+  box-shadow:
+    0 8px 25px -5px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(124, 58, 237, 0.15),
+    0 0 40px rgba(124, 58, 237, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translateY(-2px);
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.12) 0%,
+    rgba(37, 41, 115, 0.16) 50%,
+    rgba(236, 72, 153, 0.08) 100%
+  );
+}
+
+
+/* ============================================================
+   GLOWING BUTTON
+   ============================================================ */
+
+.btn-glow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  background: linear-gradient(135deg, #7C3AED 0%, #6d28d9 50%, #5b21b6 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 2px 8px rgba(124, 58, 237, 0.25),
+    0 0 20px rgba(124, 58, 237, 0.1);
+  text-decoration: none;
+}
+
+.btn-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #8b5cf6, #EC4899, #FBBF24, #8b5cf6);
+  background-size: 300% 300%;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+  animation: shimmer 4s linear infinite;
+}
+
+.btn-glow::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(0.75rem - 1px);
+  background: linear-gradient(135deg, #7C3AED 0%, #6d28d9 50%, #5b21b6 100%);
+  z-index: -1;
+  transition: background 0.3s ease;
+}
+
+.btn-glow:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(124, 58, 237, 0.35),
+    0 0 30px rgba(124, 58, 237, 0.2),
+    0 0 60px rgba(124, 58, 237, 0.1);
+}
+
+.btn-glow:hover::before {
+  opacity: 1;
+}
+
+.btn-glow:hover::after {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7C3AED 50%, #6d28d9 100%);
+}
+
+.btn-glow:active {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 8px rgba(124, 58, 237, 0.3),
+    0 0 15px rgba(124, 58, 237, 0.15);
+}
+
+
+/* ============================================================
+   SECTION DIVIDER
+   Horizontal rule with cosmic styling
+   ============================================================ */
+
+.section-divider {
+  position: relative;
+  height: 1px;
+  border: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(124, 58, 237, 0.15) 15%,
+    rgba(124, 58, 237, 0.4) 35%,
+    rgba(251, 191, 36, 0.5) 50%,
+    rgba(124, 58, 237, 0.4) 65%,
+    rgba(124, 58, 237, 0.15) 85%,
+    transparent 100%
+  );
+  margin: 3rem 0;
+}
+
+.section-divider::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 7px;
+  background: #FBBF24;
+  border-radius: 9999px;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.6), 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+
+/* ============================================================
+   STARFIELD BACKGROUND
+   Particle stars for hero sections and backgrounds
+   ============================================================ */
+
+.starfield {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 9999px;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.star::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  border-radius: 9999px;
+}
+
+/* Size variants */
+.star--sm {
+  width: 1px;
+  height: 1px;
+  opacity: 0.5;
+}
+
+.star--lg {
+  width: 3px;
+  height: 3px;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+/* Color variants for visual richness */
+.star--blue {
+  background: #a5b4fc;
+  box-shadow: 0 0 4px rgba(165, 180, 252, 0.5);
+}
+
+.star--gold {
+  background: #fde68a;
+  box-shadow: 0 0 4px rgba(253, 230, 138, 0.5);
+}
+
+.star--pink {
+  background: #f9a8d4;
+  box-shadow: 0 0 4px rgba(249, 168, 212, 0.5);
+}
+
+
+/* ============================================================
+   ZODIAC WHEEL
+   Rotating astrological chart element
+   ============================================================ */
+
+.zodiac-wheel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  animation: zodiac-spin 120s linear infinite;
+}
+
+.zodiac-wheel::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    #7C3AED,
+    #EC4899,
+    #FBBF24,
+    #10B981,
+    #7C3AED
+  );
+  opacity: 0.3;
+  z-index: -1;
+}
+
+.zodiac-wheel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  background: radial-gradient(
+    circle at center,
+    rgba(5, 8, 22, 0.9) 30%,
+    rgba(37, 41, 115, 0.15) 100%
+  );
+}
+
+
+/* ============================================================
+   CHART CONTAINER
+   Wrapper for natal chart / transit / synastry visualizations
+   ============================================================ */
+
+.chart-container {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  background: radial-gradient(
+    circle at center,
+    rgba(124, 58, 237, 0.06) 0%,
+    rgba(5, 8, 22, 0.95) 70%
+  );
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 60px rgba(124, 58, 237, 0.06),
+    0 0 30px rgba(124, 58, 237, 0.08);
+}
+
+.chart-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(124, 58, 237, 0.03) 0deg 30deg,
+      transparent 30deg 60deg
+    );
+  pointer-events: none;
+}
+
+/* Inner rings for house divisions */
+.chart-container::after {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 9999px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  pointer-events: none;
+}
+
+
+/* ============================================================
+   PREMIUM BADGE
+   For premium/paid features
+   ============================================================ */
+
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fef3c7;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.15) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 9999px;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.1);
+  white-space: nowrap;
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+
+.premium-badge::before {
+  content: "\2605";
+  font-size: 0.625rem;
+  color: #FBBF24;
+  filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.5));
+}
+
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+/* Animate elements in as they scroll into view */
+.animate-in {
+  animation: fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Stagger children for list animations */
+.stagger-children > * {
+  animation: fade-in-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 320ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 480ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 560ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 640ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 720ms; }
+.stagger-children > *:nth-child(11) { animation-delay: 800ms; }
+.stagger-children > *:nth-child(12) { animation-delay: 880ms; }
+
+/* Cosmic link styling */
+a.cosmic-link {
+  color: #a78bfa;
+  text-decoration: none;
+  background-image: linear-gradient(transparent 90%, rgba(124, 58, 237, 0.3) 90%);
+  transition: color 0.2s ease, background-image 0.2s ease;
+}
+
+a.cosmic-link:hover {
+  color: #c4b5fd;
+  background-image: linear-gradient(transparent 85%, rgba(124, 58, 237, 0.5) 85%);
+}
+
+/* Text shadow for readability on busy backgrounds */
+.text-cosmic-shadow {
+  text-shadow:
+    0 0 20px rgba(5, 8, 22, 0.8),
+    0 0 40px rgba(5, 8, 22, 0.5);
+}
+
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .zodiac-wheel,
+  .star,
+  .btn-glow::before {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .glass-card,
+  .glass-card-hover {
+    border-radius: 0.75rem;
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  }
+
+  .btn-glow {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+  }
+
+  .section-divider {
+    margin: 2rem 0;
+  }
+}
