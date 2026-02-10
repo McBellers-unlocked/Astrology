@@ -6,66 +6,30 @@ import {
   Sparkles,
   ArrowRight,
   Flame,
-  Droplets,
-  Wind,
   Mountain,
+  Wind,
+  Waves,
   Star,
   Filter,
 } from 'lucide-react';
+import {
+  SIGNS,
+  ELEMENT_STYLES,
+  ELEMENT_DESCRIPTIONS,
+  type SignData,
+} from '@/data/zodiac';
 
 /* ================================================================
-   ZODIAC DATA
+   TYPE & CONSTANTS
    ================================================================ */
-
-const SIGNS = [
-  { slug: 'aries', name: 'Aries', symbol: '\u2648', dates: 'Mar 21 - Apr 19', element: 'Fire', modality: 'Cardinal', ruler: 'Mars', color: '#EF4444', luckyNumbers: [1, 9, 17], luckyDay: 'Tuesday', bodyPart: 'Head' },
-  { slug: 'taurus', name: 'Taurus', symbol: '\u2649', dates: 'Apr 20 - May 20', element: 'Earth', modality: 'Fixed', ruler: 'Venus', color: '#10B981', luckyNumbers: [2, 6, 14], luckyDay: 'Friday', bodyPart: 'Throat' },
-  { slug: 'gemini', name: 'Gemini', symbol: '\u264A', dates: 'May 21 - Jun 20', element: 'Air', modality: 'Mutable', ruler: 'Mercury', color: '#8B5CF6', luckyNumbers: [5, 7, 14], luckyDay: 'Wednesday', bodyPart: 'Arms & Hands' },
-  { slug: 'cancer', name: 'Cancer', symbol: '\u264B', dates: 'Jun 21 - Jul 22', element: 'Water', modality: 'Cardinal', ruler: 'Moon', color: '#3B82F6', luckyNumbers: [2, 7, 11], luckyDay: 'Monday', bodyPart: 'Chest & Stomach' },
-  { slug: 'leo', name: 'Leo', symbol: '\u264C', dates: 'Jul 23 - Aug 22', element: 'Fire', modality: 'Fixed', ruler: 'Sun', color: '#F59E0B', luckyNumbers: [1, 4, 10], luckyDay: 'Sunday', bodyPart: 'Heart & Spine' },
-  { slug: 'virgo', name: 'Virgo', symbol: '\u264D', dates: 'Aug 23 - Sep 22', element: 'Earth', modality: 'Mutable', ruler: 'Mercury', color: '#059669', luckyNumbers: [5, 14, 23], luckyDay: 'Wednesday', bodyPart: 'Digestive System' },
-  { slug: 'libra', name: 'Libra', symbol: '\u264E', dates: 'Sep 23 - Oct 22', element: 'Air', modality: 'Cardinal', ruler: 'Venus', color: '#EC4899', luckyNumbers: [6, 15, 24], luckyDay: 'Friday', bodyPart: 'Lower Back & Kidneys' },
-  { slug: 'scorpio', name: 'Scorpio', symbol: '\u264F', dates: 'Oct 23 - Nov 21', element: 'Water', modality: 'Fixed', ruler: 'Pluto', color: '#7C3AED', luckyNumbers: [8, 11, 18], luckyDay: 'Tuesday', bodyPart: 'Reproductive System' },
-  { slug: 'sagittarius', name: 'Sagittarius', symbol: '\u2650', dates: 'Nov 22 - Dec 21', element: 'Fire', modality: 'Mutable', ruler: 'Jupiter', color: '#F97316', luckyNumbers: [3, 7, 9], luckyDay: 'Thursday', bodyPart: 'Hips & Thighs' },
-  { slug: 'capricorn', name: 'Capricorn', symbol: '\u2651', dates: 'Dec 22 - Jan 19', element: 'Earth', modality: 'Cardinal', ruler: 'Saturn', color: '#6B7280', luckyNumbers: [4, 8, 13], luckyDay: 'Saturday', bodyPart: 'Knees & Bones' },
-  { slug: 'aquarius', name: 'Aquarius', symbol: '\u2652', dates: 'Jan 20 - Feb 18', element: 'Air', modality: 'Fixed', ruler: 'Uranus', color: '#06B6D4', luckyNumbers: [4, 7, 11], luckyDay: 'Saturday', bodyPart: 'Ankles & Circulatory System' },
-  { slug: 'pisces', name: 'Pisces', symbol: '\u2653', dates: 'Feb 19 - Mar 20', element: 'Water', modality: 'Mutable', ruler: 'Neptune', color: '#8B5CF6', luckyNumbers: [3, 9, 12], luckyDay: 'Thursday', bodyPart: 'Feet & Immune System' },
-];
-
-const SIGN_DESCRIPTIONS: Record<string, string> = {
-  aries:
-    'The first sign of the zodiac, Aries charges through life with fierce determination and infectious enthusiasm. Born leaders who thrive on challenge and competition, Aries individuals bring a pioneering spirit to everything they touch, turning obstacles into opportunities with raw courage and unstoppable drive.',
-  taurus:
-    'Grounded in the richness of the physical world, Taurus embodies patience, loyalty, and a profound appreciation for beauty. These earthy souls build their lives on solid foundations, savoring every sensory pleasure while creating lasting security for themselves and the people they love most deeply.',
-  gemini:
-    'The celestial twins dance between worlds of thought and conversation, bringing intellectual curiosity and adaptable charm to every encounter. Gemini\u2019s quicksilver mind connects ideas that others miss, weaving stories and forging connections with a playful wit that keeps everyone endlessly fascinated.',
-  cancer:
-    'Guided by the Moon\u2019s tender rhythms, Cancer carries the emotional wisdom of the zodiac within their nurturing heart. These deeply intuitive souls create sanctuary wherever they go, offering fierce protection to their loved ones while navigating the tides of feeling with remarkable courage and grace.',
-  leo:
-    'Ruled by the radiant Sun, Leo illuminates every room with warmth, creativity, and an unmistakable presence that draws all eyes. These generous-hearted lions lead with both passion and compassion, inspiring others to shine alongside them while never dimming their own magnificent, golden light.',
-  virgo:
-    'With Mercury\u2019s analytical precision and the Earth\u2019s grounding wisdom, Virgo transforms chaos into order and potential into excellence. These devoted perfectionists serve the world through meticulous care and practical brilliance, finding sacred purpose in the details that others overlook entirely.',
-  libra:
-    'Venus bestows upon Libra an exquisite sense of harmony, beauty, and relational wisdom that creates balance wherever they go. These natural diplomats navigate the complexities of human connection with grace, seeking fairness and partnership while cultivating an aesthetic vision that elevates everything around them.',
-  scorpio:
-    'Pluto\u2019s transformative power flows through Scorpio with magnetic intensity, granting these fearless souls the ability to see beneath every surface. Masters of reinvention who embrace the full spectrum of human experience, Scorpios forge unbreakable bonds through radical honesty and emotional depth.',
-  sagittarius:
-    'Jupiter\u2019s boundless optimism fuels the Sagittarian quest for truth, adventure, and the expansive wisdom found beyond every horizon. These philosophical archers aim their arrows at the stars, inspiring others with their contagious enthusiasm, generous spirit, and unwavering faith in life\u2019s infinite possibilities.',
-  capricorn:
-    'Saturn\u2019s disciplined wisdom shapes Capricorn into the zodiac\u2019s master builder, scaling peaks that others consider impossible with methodical patience. These ambitious strategists play the long game with quiet authority, constructing legacies of lasting achievement while earning deep respect through their unwavering integrity.',
-  aquarius:
-    'Uranus sparks the revolutionary brilliance of Aquarius, the zodiac\u2019s visionary humanitarian who sees the future before anyone else. These independent thinkers challenge convention with innovative ideas, building community around shared ideals while marching to a cosmic drumbeat that only their awakened minds can hear.',
-  pisces:
-    'Neptune\u2019s mystical currents flow through Pisces, blessing these compassionate dreamers with boundless imagination and spiritual depth. The last sign of the zodiac carries the collective wisdom of all twelve, channeling universal empathy into art, healing, and a transcendent love that dissolves every boundary.',
-};
 
 type ElementFilter = 'All' | 'Fire' | 'Earth' | 'Air' | 'Water';
 
-const ELEMENT_STYLES: Record<string, { bg: string; text: string; border: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = {
-  Fire: { bg: 'bg-stardust-500/10', text: 'text-stardust-400', border: 'border-stardust-500/30', icon: Flame },
-  Earth: { bg: 'bg-aurora-500/10', text: 'text-aurora-400', border: 'border-aurora-500/30', icon: Mountain },
-  Air: { bg: 'bg-celestial-500/10', text: 'text-celestial-200', border: 'border-celestial-500/30', icon: Wind },
-  Water: { bg: 'bg-nebula-500/10', text: 'text-nebula-400', border: 'border-nebula-500/30', icon: Droplets },
+const ELEMENT_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  Fire: Flame,
+  Earth: Mountain,
+  Air: Wind,
+  Water: Waves,
 };
 
 const FILTER_TABS: ElementFilter[] = ['All', 'Fire', 'Earth', 'Air', 'Water'];
@@ -74,38 +38,35 @@ const FILTER_TABS: ElementFilter[] = ['All', 'Fire', 'Earth', 'Air', 'Water'];
    ZODIAC SIGN CARD
    ================================================================ */
 
-function ZodiacSignCard({ sign }: { sign: (typeof SIGNS)[number] }) {
+function ZodiacSignCard({ sign }: { sign: SignData }) {
   const style = ELEMENT_STYLES[sign.element];
-  const ElementIcon = style.icon;
+  const ElementIcon = ELEMENT_ICONS[sign.element];
 
   return (
     <Link
       href={`/zodiac/${sign.slug}`}
       className="glass-card-hover group flex flex-col p-6 sm:p-7 transition-all duration-300"
     >
-      {/* Symbol */}
+      {/* Symbol & Element Badge */}
       <div className="mb-4 flex items-start justify-between">
-        <span
-          className="text-5xl sm:text-6xl leading-none transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
-          style={{ color: sign.color }}
-        >
+        <span className="text-5xl sm:text-6xl leading-none transition-transform duration-300 group-hover:scale-110 drop-shadow-lg">
           {sign.symbol}
         </span>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.625rem] font-medium uppercase tracking-wider ${style.bg} ${style.text} ${style.border}`}
         >
-          <ElementIcon size={10} />
+          {ElementIcon && <ElementIcon size={10} />}
           {sign.element}
         </span>
       </div>
 
-      {/* Name & dates */}
+      {/* Name & Dates */}
       <h3 className="text-xl font-bold text-foreground mb-1">{sign.name}</h3>
       <p className="text-xs text-dust-500 mb-4">{sign.dates}</p>
 
       {/* Description */}
       <p className="text-sm text-dust-400 leading-relaxed flex-1 mb-5 line-clamp-4">
-        {SIGN_DESCRIPTIONS[sign.slug]}
+        {sign.shortDescription}
       </p>
 
       {/* CTA */}
@@ -167,20 +128,20 @@ export default function ZodiacHubPage() {
             {FILTER_TABS.map((tab) => {
               const isActive = activeFilter === tab;
               const tabStyle = tab !== 'All' ? ELEMENT_STYLES[tab] : null;
-              const TabIcon = tab !== 'All' && tabStyle ? tabStyle.icon : Filter;
+              const TabIcon = tab !== 'All' ? ELEMENT_ICONS[tab] : Filter;
 
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveFilter(tab)}
-                  className={`relative flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer ${
                     isActive
                       ? 'bg-celestial-500/20 text-foreground shadow-[0_0_12px_rgba(124,58,237,0.15)]'
                       : 'text-dust-400 hover:bg-white/[0.03] hover:text-foreground'
                   }`}
                   aria-pressed={isActive}
                 >
-                  <TabIcon size={14} className={isActive && tabStyle ? tabStyle.text : ''} />
+                  {TabIcon && <TabIcon size={14} className={isActive && tabStyle ? tabStyle.text : ''} />}
                   {tab}
                   {tab !== 'All' && (
                     <span className="hidden sm:inline text-xs text-dust-500">
@@ -193,6 +154,13 @@ export default function ZodiacHubPage() {
           </div>
         </div>
 
+        {/* Element description when filtering */}
+        {activeFilter !== 'All' && (
+          <p className="text-center text-sm text-dust-300 -mt-6 mb-10 max-w-lg mx-auto animate-in">
+            {ELEMENT_DESCRIPTIONS[activeFilter]}
+          </p>
+        )}
+
         {/* ============================================
             ZODIAC SIGN GRID
             ============================================ */}
@@ -202,7 +170,6 @@ export default function ZodiacHubPage() {
           ))}
         </div>
 
-        {/* Section Divider */}
         <hr className="section-divider my-20" />
 
         {/* ============================================
@@ -258,10 +225,7 @@ export default function ZodiacHubPage() {
                             href={`/zodiac/${sign.slug}`}
                             className="inline-flex items-center gap-3 group"
                           >
-                            <span
-                              className="text-2xl transition-transform duration-200 group-hover:scale-110"
-                              style={{ color: sign.color }}
-                            >
+                            <span className="text-2xl transition-transform duration-200 group-hover:scale-110">
                               {sign.symbol}
                             </span>
                             <span className="font-semibold text-foreground group-hover:text-celestial-200 transition-colors">
@@ -288,13 +252,61 @@ export default function ZodiacHubPage() {
           </div>
         </section>
 
-        {/* Section Divider */}
+        <hr className="section-divider my-20" />
+
+        {/* ============================================
+            THE FOUR ELEMENTS
+            ============================================ */}
+        <section className="mb-20">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+              The Four Elements
+            </h2>
+            <p className="mt-4 text-dust-400 text-lg max-w-xl mx-auto">
+              Every sign is shaped by one of four elemental forces that define its core nature.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-5">
+            {(['Fire', 'Earth', 'Air', 'Water'] as const).map((element) => {
+              const style = ELEMENT_STYLES[element];
+              const Icon = ELEMENT_ICONS[element];
+              const elementSigns = SIGNS.filter((s) => s.element === element);
+              return (
+                <div key={element} className="glass-card p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={style.text}>
+                      {Icon && <Icon size={20} />}
+                    </span>
+                    <h3 className={`text-lg font-bold ${style.text}`}>{element} Signs</h3>
+                  </div>
+                  <p className="text-sm text-dust-300 leading-relaxed mb-4">
+                    {ELEMENT_DESCRIPTIONS[element]}
+                  </p>
+                  <div className="flex gap-3">
+                    {elementSigns.map((s) => (
+                      <Link
+                        key={s.slug}
+                        href={`/zodiac/${s.slug}`}
+                        className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white/[0.03] transition-colors"
+                      >
+                        <span className="text-2xl">{s.symbol}</span>
+                        <span className="text-xs text-dust-300">{s.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         <hr className="section-divider my-20" />
 
         {/* ============================================
             SEO CONTENT SECTION
             ============================================ */}
-        <section className="mx-auto max-w-3xl">
+        <section className="mx-auto max-w-3xl mb-20">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
               Understanding the Zodiac
@@ -364,7 +376,6 @@ export default function ZodiacHubPage() {
           </div>
         </section>
 
-        {/* Section Divider */}
         <hr className="section-divider my-16" />
 
         {/* ============================================
@@ -389,10 +400,10 @@ export default function ZodiacHubPage() {
                 Get Your Free Birth Chart
               </Link>
               <Link
-                href="/horoscope"
+                href="/compatibility"
                 className="inline-flex items-center gap-2 text-celestial-300 hover:text-celestial-200 font-semibold transition-colors"
               >
-                Read Today&apos;s Horoscope
+                Check Compatibility
                 <ArrowRight size={16} />
               </Link>
             </div>
