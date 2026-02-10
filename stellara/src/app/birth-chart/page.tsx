@@ -392,7 +392,7 @@ function BirthChartWheel({ data }: { data: ChartData }) {
   const centerR = houseInnerR - 8;
 
   const ascDeg = data.houses[0]
-    ? (ZODIAC_SIGNS.indexOf(data.houses[0].sign) * 30 + data.houses[0].degree + data.houses[0].minute / 60)
+    ? (ZODIAC_SIGNS.indexOf(data.houses[0].sign as typeof ZODIAC_SIGNS[number]) * 30 + data.houses[0].degree + data.houses[0].minute / 60)
     : 0;
 
   function toSvgAngle(eclipticDeg: number): number {
@@ -438,7 +438,7 @@ function BirthChartWheel({ data }: { data: ChartData }) {
 
   // House cusp lines
   const houseCusps = data.houses.map((h) => {
-    const eclipticDeg = ZODIAC_SIGNS.indexOf(h.sign) * 30 + h.degree + h.minute / 60;
+    const eclipticDeg = ZODIAC_SIGNS.indexOf(h.sign as typeof ZODIAC_SIGNS[number]) * 30 + h.degree + h.minute / 60;
     return toSvgAngle(eclipticDeg);
   });
 
