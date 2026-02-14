@@ -5,9 +5,11 @@ applications:
       phases:
         preBuild:
           commands:
+            - nvm use 18
             - npm ci
         build:
           commands:
+            - env | grep -e NEXT
             - npm run build
       artifacts:
         baseDirectory: .next
@@ -17,3 +19,6 @@ applications:
         paths:
           - node_modules/**/*
           - .next/cache/**/*
+      buildEnvironment:
+        environmentVariables:
+          NEXT_TELEMETRY_DISABLED: '1'
