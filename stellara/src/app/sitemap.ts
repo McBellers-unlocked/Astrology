@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import type { ZodiacSign } from '@/types/astrology';
 
+export const dynamic = 'force-static';
+
 const BASE_URL = 'https://stellara.co';
 
 const SIGNS: ZodiacSign[] = [
