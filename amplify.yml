@@ -12,13 +12,9 @@ applications:
           commands:
             - npm run build
       artifacts:
-        baseDirectory: .next
+        baseDirectory: out
         files:
           - '**/*'
       cache:
         paths:
           - node_modules/**/*
-          - .next/cache/**/*
-      buildEnvironment:
-        environmentVariables:
-          NEXT_TELEMETRY_DISABLED: '1'

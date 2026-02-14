@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import type { ZodiacSign } from '@/types/astrology';
 
-const BASE_URL = 'https://stellara.app';
+const BASE_URL = 'https://stellara.co';
 
 const SIGNS: ZodiacSign[] = [
   'aries', 'taurus', 'gemini', 'cancer',

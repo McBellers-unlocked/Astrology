@@ -6,9 +6,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: '/api/',
       },
     ],
-    sitemap: 'https://stellara.app/sitemap.xml',
+    sitemap: 'https://stellara.co/sitemap.xml',
   };
 }
