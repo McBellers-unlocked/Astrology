@@ -5,11 +5,11 @@ applications:
       phases:
         preBuild:
           commands:
-            - nvm install 18
+            - nvm install 20
+            - node --version
             - npm ci
         build:
           commands:
-            - env | grep -e NEXT
             - npm run build
       artifacts:
         baseDirectory: .next
