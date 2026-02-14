@@ -7,39 +7,32 @@ import {
   Twitter,
   Instagram,
   Youtube,
-  Github,
   ChevronDown,
   Globe,
 } from "lucide-react";
 
 const exploreLinks = [
-  { label: "Horoscopes", href: "/horoscopes" },
+  { label: "Horoscopes", href: "/horoscope" },
   { label: "Birth Chart", href: "/birth-chart" },
   { label: "Compatibility", href: "/compatibility" },
   { label: "Zodiac Signs", href: "/zodiac" },
 ];
 
 const learnLinks = [
-  { label: "Astrology 101", href: "/learn/astrology-101" },
-  { label: "Planet Guide", href: "/learn/planets" },
-  { label: "House Meanings", href: "/learn/houses" },
-  { label: "Aspect Guide", href: "/learn/aspects" },
+  { label: "Zodiac Signs", href: "/zodiac" },
+  { label: "Birth Charts", href: "/birth-chart" },
+  { label: "Compatibility", href: "/compatibility" },
+  { label: "Daily Horoscopes", href: "/horoscope" },
 ];
 
 const companyLinks = [
-  { label: "About", href: "/about" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
-  { label: "Contact", href: "/contact" },
-  { label: "Privacy Policy", href: "/privacy" },
-  { label: "Terms", href: "/terms" },
 ];
 
 const socialLinks = [
-  { label: "Twitter", icon: Twitter, href: "https://twitter.com" },
-  { label: "Instagram", icon: Instagram, href: "https://instagram.com" },
-  { label: "YouTube", icon: Youtube, href: "https://youtube.com" },
-  { label: "GitHub", icon: Github, href: "https://github.com" },
+  { label: "Twitter", icon: Twitter, href: "#" },
+  { label: "Instagram", icon: Instagram, href: "#" },
+  { label: "YouTube", icon: Youtube, href: "#" },
 ];
 
 const languages = [

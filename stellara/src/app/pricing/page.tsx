@@ -50,7 +50,7 @@ const tiers: PricingTier[] = [
       '12 zodiac profiles',
     ],
     cta: 'Get Started Free',
-    ctaHref: '/signup',
+    ctaHref: '/birth-chart',
   },
   {
     id: 'stellar',
@@ -71,7 +71,7 @@ const tiers: PricingTier[] = [
       'Ad-free experience',
     ],
     cta: 'Start 7-Day Free Trial',
-    ctaHref: '/signup?plan=stellar',
+    ctaHref: '/birth-chart',
   },
   {
     id: 'cosmic',
@@ -92,7 +92,7 @@ const tiers: PricingTier[] = [
       'Unlimited saved charts',
     ],
     cta: 'Start 7-Day Free Trial',
-    ctaHref: '/signup?plan=cosmic',
+    ctaHref: '/birth-chart',
   },
 ];
 
@@ -415,7 +415,7 @@ export default function PricingPage() {
           <p className="mb-8 text-dust-400">
             Start with our free plan and upgrade whenever you are ready. The cosmos will wait for you.
           </p>
-          <Button variant="primary" size="lg" href="/signup">
+          <Button variant="primary" size="lg" href="/birth-chart">
             Get Started Free
           </Button>
         </div>

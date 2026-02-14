@@ -10,7 +10,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Horoscopes", href: "/horoscopes" },
+  { label: "Horoscopes", href: "/horoscope" },
   { label: "Birth Chart", href: "/birth-chart" },
   { label: "Compatibility", href: "/compatibility" },
   { label: "Zodiac Signs", href: "/zodiac" },
@@ -86,7 +86,7 @@ export default function Header() {
           <div className="flex items-center gap-3">
             {/* Sign In link (desktop only) */}
             <Link
-              href="/sign-in"
+              href="/pricing"
               className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-dust-400 transition-colors hover:text-foreground lg:flex"
             >
               <User className="h-4 w-4" />
@@ -180,7 +180,7 @@ export default function Header() {
 
             {/* Sign In (mobile) */}
             <Link
-              href="/sign-in"
+              href="/pricing"
               className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
               onClick={closeMobileMenu}
             >
