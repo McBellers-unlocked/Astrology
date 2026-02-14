@@ -9,6 +9,8 @@ import {
   User,
   CalendarDays,
   ChevronRight,
+  ChevronDown,
+  HelpCircle,
   Info,
   Lock,
   Crown,
@@ -1010,6 +1012,7 @@ export default function BirthChartPage() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [activeTab, setActiveTab] = useState<TabName>('Chart Overview');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [houseGuideOpen, setHouseGuideOpen] = useState(false);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -1161,6 +1164,44 @@ export default function BirthChartPage() {
                   </option>
                 ))}
               </select>
+
+              {/* Helper hint */}
+              <p className="text-xs text-dust-500 mt-1.5">
+                Not sure? <span className="text-celestial-300">Placidus</span> is the most widely used system.
+              </p>
+
+              {/* Expandable house system guide */}
+              <button
+                type="button"
+                onClick={() => setHouseGuideOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 mt-2 text-xs text-dust-400 hover:text-celestial-200 transition-colors"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>Learn about house systems</span>
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${houseGuideOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <div className={`grid transition-all duration-300 ease-in-out ${houseGuideOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}>
+                <div className="overflow-hidden">
+                  <div className="rounded-xl border border-celestial-500/10 bg-space-800/40 p-4 space-y-3 text-xs leading-relaxed text-dust-400">
+                    <div>
+                      <span className="font-semibold text-celestial-200">Placidus</span> — The most popular system worldwide. Uses time-based division of the sky. Best for most readings.
+                    </div>
+                    <div>
+                      <span className="font-semibold text-celestial-200">Koch</span> — Similar to Placidus but factors in birth location more heavily. Popular in German-speaking countries.
+                    </div>
+                    <div>
+                      <span className="font-semibold text-celestial-200">Whole Sign</span> — Each house spans one full zodiac sign. The oldest system, favoured in Hellenistic astrology.
+                    </div>
+                    <div>
+                      <span className="font-semibold text-celestial-200">Equal</span> — Each house is exactly 30&deg; from the Ascendant. Simple and consistent across all latitudes.
+                    </div>
+                    <div>
+                      <span className="font-semibold text-celestial-200">Campanus</span> — Divides the sky by space rather than time. Less common, used in some medieval traditions.
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Submit Button */}
