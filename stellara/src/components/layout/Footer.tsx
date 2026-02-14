@@ -10,19 +10,14 @@ import {
   ChevronDown,
   Globe,
 } from "lucide-react";
+import EmailCapture from "@/components/EmailCapture";
 
 const exploreLinks = [
   { label: "Horoscopes", href: "/horoscope" },
   { label: "Birth Chart", href: "/birth-chart" },
   { label: "Compatibility", href: "/compatibility" },
   { label: "Zodiac Signs", href: "/zodiac" },
-];
-
-const learnLinks = [
-  { label: "Zodiac Signs", href: "/zodiac" },
-  { label: "Birth Charts", href: "/birth-chart" },
-  { label: "Compatibility", href: "/compatibility" },
-  { label: "Daily Horoscopes", href: "/horoscope" },
+  { label: "Blog", href: "/blog" },
 ];
 
 const companyLinks = [
@@ -119,26 +114,7 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Column 3: Learn */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-dust-300">
-                Learn
-              </h3>
-              <ul className="mt-4 space-y-3">
-                {learnLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-dust-400 transition-colors duration-200 hover:text-celestial-200"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Column 4: Company */}
+            {/* Column 3: Company */}
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider text-dust-300">
                 Company
@@ -155,6 +131,22 @@ export default function Footer() {
                   </li>
                 ))}
               </ul>
+            </div>
+
+            {/* Column 4: Newsletter */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-dust-300">
+                Stay Aligned
+              </h3>
+              <div className="mt-4">
+                <EmailCapture
+                  heading=""
+                  subheading=""
+                  ctaText="Subscribe"
+                  variant="inline"
+                  source="footer"
+                />
+              </div>
             </div>
           </div>
         </div>

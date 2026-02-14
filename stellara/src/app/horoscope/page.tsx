@@ -19,6 +19,7 @@ import {
   HOROSCOPE_TEASERS,
   HOROSCOPE_RATINGS,
 } from '@/lib/zodiac-data';
+import EmailCapture from '@/components/EmailCapture';
 
 type TabKey = 'sun' | 'moon' | 'rising';
 
@@ -218,6 +219,17 @@ export default function HoroscopeHubPage() {
           {SIGNS.map((sign) => (
             <ZodiacCard key={sign.slug} sign={sign} />
           ))}
+        </div>
+
+        {/* Email Capture */}
+        <div className="mx-auto mt-16 max-w-xl">
+          <EmailCapture
+            heading="Your horoscope, delivered daily"
+            subheading="Start each morning with cosmic guidance tailored to your sign."
+            ctaText="Get Daily Horoscopes"
+            variant="card"
+            source="horoscope_hub"
+          />
         </div>
 
         {/* Section Divider */}

@@ -359,8 +359,28 @@ export default function HomePage() {
     day: 'numeric',
   });
 
+  /* FAQ structured data for AEO / Answer Engine Optimisation */
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ_DATA.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+
   return (
     <div className="relative min-h-screen">
+      {/* FAQ Schema for Google / AI answer engines */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
       <StarField />
 
       <main className="relative z-10">

@@ -290,8 +290,28 @@ export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
+  /* FAQ structured data for AEO / Answer Engine Optimisation */
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden pb-24 pt-16 sm:pt-24">
+      {/* FAQ Schema for Google / AI answer engines */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
       {/* Ambient glow */}
       <div
         className="pointer-events-none absolute inset-0 -z-10"

@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
   { label: "Birth Chart", href: "/birth-chart" },
   { label: "Compatibility", href: "/compatibility" },
   { label: "Zodiac Signs", href: "/zodiac" },
+  { label: "Blog", href: "/blog" },
   { label: "Pricing", href: "/pricing" },
 ];
 

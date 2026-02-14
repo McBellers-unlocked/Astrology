@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import type { ZodiacSign } from '@/types/astrology';
+import { BLOG_POSTS } from '@/data/blog-posts';
 
 export const dynamic = 'force-static';
 
@@ -83,10 +84,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
+  /* ---- Blog posts ---- */
+  const blogPages: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE_URL}/blog`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    ...BLOG_POSTS.map((post) => ({
+      url: `${BASE_URL}/blog/${post.slug}`,
+      lastModified: new Date(post.publishedAt),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
   return [
     ...staticPages,
     ...horoscopePages,
     ...zodiacPages,
     ...compatibilityPages,
+    ...blogPages,
   ];
 }

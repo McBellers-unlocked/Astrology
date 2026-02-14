@@ -23,6 +23,8 @@ import {
   Wind,
   Droplets,
 } from 'lucide-react';
+import EmailCapture from '@/components/EmailCapture';
+import ShareChart from '@/components/ShareChart';
 
 /* ================================================================
    CONSTANTS & TYPES
@@ -1281,14 +1283,22 @@ export default function BirthChartPage() {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-        {/* Back Button */}
-        <button
-          onClick={handleReset}
-          className="flex items-center gap-2 text-sm text-dust-400 hover:text-celestial-300 transition-colors mb-8 group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Generate Another Chart
-        </button>
+        {/* Actions Bar */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-2 text-sm text-dust-400 hover:text-celestial-300 transition-colors group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Generate Another Chart
+          </button>
+          <ShareChart
+            sunSign={chartData.planets.find(p => p.planet === 'Sun')?.sign ?? 'Unknown'}
+            moonSign={chartData.planets.find(p => p.planet === 'Moon')?.sign ?? 'Unknown'}
+            risingSign={chartData.houses[0]?.sign ?? 'Unknown'}
+            name={chartData.name}
+          />
+        </div>
 
         {/* Header */}
         <div className="text-center mb-10 animate-in">
@@ -1369,6 +1379,17 @@ export default function BirthChartPage() {
               {activeTab === 'Full Report' && <FullReportTab />}
             </div>
           </div>
+        </div>
+
+        {/* Email Capture — post-chart generation */}
+        <div className="mt-12 mx-auto max-w-xl animate-in" style={{ animationDelay: '300ms' }}>
+          <EmailCapture
+            heading="Get your chart insights by email"
+            subheading="Receive transit alerts, monthly forecasts, and updates when planets activate your chart."
+            ctaText="Send Me Updates"
+            variant="banner"
+            source="birth_chart_results"
+          />
         </div>
       </div>
     </div>
