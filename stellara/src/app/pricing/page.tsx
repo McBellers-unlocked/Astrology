@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Check,
@@ -343,6 +343,14 @@ function TierCard({
    ------------------------------------------------------------------ */
 
 export default function PricingPage() {
+  return (
+    <Suspense>
+      <PricingPageInner />
+    </Suspense>
+  );
+}
+
+function PricingPageInner() {
   const searchParams = useSearchParams();
   const checkoutSuccess = searchParams.get('success') === '1';
   const checkoutCanceled = searchParams.get('canceled') === '1';
@@ -351,9 +359,11 @@ export default function PricingPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
   // Refresh user data after successful checkout
-  if (checkoutSuccess) {
-    refreshUser();
-  }
+  useEffect(() => {
+    if (checkoutSuccess) {
+      refreshUser();
+    }
+  }, [checkoutSuccess, refreshUser]);
 
   /* FAQ structured data for AEO / Answer Engine Optimisation */
   const faqSchema = {
