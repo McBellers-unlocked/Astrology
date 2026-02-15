@@ -1,0 +1,96 @@
+/**
+ * Twitter/X API v2 posting module.
+ *
+ * Uses OAuth 1.0a User Context for tweet creation.
+ * Requires these env vars:
+ *   TWITTER_API_KEY        (Consumer Key)
+ *   TWITTER_API_SECRET     (Consumer Secret)
+ *   TWITTER_ACCESS_TOKEN   (User Access Token)
+ *   TWITTER_ACCESS_SECRET  (User Access Token Secret)
+ */
+
+import crypto from 'crypto';
+
+const API_KEY = process.env.TWITTER_API_KEY ?? '';
+const API_SECRET = process.env.TWITTER_API_SECRET ?? '';
+const ACCESS_TOKEN = process.env.TWITTER_ACCESS_TOKEN ?? '';
+const ACCESS_SECRET = process.env.TWITTER_ACCESS_SECRET ?? '';
+
+const TWEET_URL = 'https://api.twitter.com/2/tweets';
+
+interface TweetResult {
+  id: string;
+  text: string;
+}
+
+/** Build OAuth 1.0a Authorization header */
+function buildOAuthHeader(method: string, url: string, body: string): string {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = crypto.randomBytes(16).toString('hex');
+
+  const params: Record<string, string> = {
+    oauth_consumer_key: API_KEY,
+    oauth_nonce: nonce,
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp: timestamp,
+    oauth_token: ACCESS_TOKEN,
+    oauth_version: '1.0',
+  };
+
+  // Create signature base string
+  const sortedParams = Object.keys(params)
+    .sort()
+    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
+    .join('&');
+
+  const baseString = [
+    method.toUpperCase(),
+    encodeURIComponent(url),
+    encodeURIComponent(sortedParams),
+  ].join('&');
+
+  const signingKey = `${encodeURIComponent(API_SECRET)}&${encodeURIComponent(ACCESS_SECRET)}`;
+  const signature = crypto
+    .createHmac('sha1', signingKey)
+    .update(baseString)
+    .digest('base64');
+
+  params['oauth_signature'] = signature;
+
+  const header = Object.keys(params)
+    .sort()
+    .map((k) => `${encodeURIComponent(k)}="${encodeURIComponent(params[k])}"`)
+    .join(', ');
+
+  return `OAuth ${header}`;
+}
+
+/** Post a tweet via Twitter API v2 */
+export async function postToTwitter(text: string): Promise<TweetResult> {
+  if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_SECRET) {
+    throw new Error('Twitter API credentials not configured');
+  }
+
+  // Twitter character limit is 280
+  const trimmedText = text.length > 280 ? text.slice(0, 277) + '...' : text;
+
+  const body = JSON.stringify({ text: trimmedText });
+  const authHeader = buildOAuthHeader('POST', TWEET_URL, body);
+
+  const res = await fetch(TWEET_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/json',
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Twitter API error (${res.status}): ${error}`);
+  }
+
+  const data = (await res.json()) as { data: TweetResult };
+  return data.data;
+}
