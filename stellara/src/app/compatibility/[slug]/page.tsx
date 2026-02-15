@@ -7,11 +7,11 @@ import {
   MessageCircle,
   Shield,
   Clock,
-  Lock,
   ArrowRight,
   ChevronRight,
   Sparkles,
 } from 'lucide-react';
+import PremiumGate from '@/components/PremiumGate';
 
 /* -------------------------------------------------------------------------- */
 /*  Zodiac sign data (extended with modality & ruler)                         */
@@ -672,7 +672,7 @@ export default async function CompatibilityPairingPage({ params }: PageProps) {
             <hr className="section-divider" />
 
             {/* -------------------------------------------------------------- */}
-            {/*  Premium locked section: Full Synastry Chart Analysis           */}
+            {/*  Premium: Full Synastry Chart Analysis                         */}
             {/* -------------------------------------------------------------- */}
             <section className="glass-card overflow-hidden">
               <div className="border-b border-white/[0.06] px-6 py-4">
@@ -681,66 +681,43 @@ export default async function CompatibilityPairingPage({ params }: PageProps) {
                   <h2 className="text-lg font-semibold text-foreground">
                     Full Synastry Chart Analysis
                   </h2>
-                  <span className="premium-badge ml-auto">Premium</span>
                 </div>
               </div>
 
-              <div className="relative px-6 py-5">
-                {/* Visible preview paragraph */}
-                <p className="mb-4 text-sm leading-relaxed text-dust-300">
-                  A full synastry chart overlays {sign1.name}&apos;s and{' '}
-                  {sign2.name}&apos;s complete natal charts to reveal the
-                  deepest patterns of compatibility. This analysis examines
-                  every planetary aspect between both charts, including
-                  Venus-Mars connections for romantic chemistry, Moon-Moon
-                  aspects for emotional attunement, and Saturn contacts for
-                  long-term stability.
-                </p>
-
-                {/* Blurred / locked content */}
-                <div className="relative">
-                  <div
-                    className="select-none text-sm leading-relaxed text-dust-300"
-                    style={{
-                      filter: 'blur(6px)',
-                      WebkitFilter: 'blur(6px)',
-                      userSelect: 'none',
-                    }}
-                    aria-hidden="true"
-                  >
-                    The interaspect analysis between {sign1.name} and{' '}
-                    {sign2.name} reveals a fascinating pattern of planetary
-                    connections that go far beyond sun-sign compatibility. Your
-                    Venus in relation to their Mars creates a magnetic attraction
-                    axis, while the Moon-Saturn contacts suggest a karmic bond
-                    that spans multiple lifetimes. The composite chart midpoints
-                    indicate areas of extraordinary creative potential and shared
-                    purpose that become increasingly powerful as the relationship
-                    matures. Additionally, the nodal axis connections reveal the
-                    spiritual lessons this partnership is designed to teach both
-                    individuals, offering a roadmap for conscious evolution
-                    through love.
+              <div className="px-6 py-5">
+                <PremiumGate
+                  requiredTier="cosmic"
+                  previewText={`A full synastry chart overlays ${sign1.name}'s and ${sign2.name}'s complete natal charts to reveal the deepest patterns of compatibility. This analysis examines every planetary aspect between both charts, including Venus-Mars connections for romantic chemistry, Moon-Moon aspects for emotional attunement, and Saturn contacts for long-term stability.`}
+                  featureName="Full Synastry Analysis"
+                >
+                  <div className="space-y-4">
+                    <p className="text-sm leading-relaxed text-dust-300 sm:text-base sm:leading-relaxed">
+                      A full synastry chart overlays {sign1.name}&apos;s and{' '}
+                      {sign2.name}&apos;s complete natal charts to reveal the
+                      deepest patterns of compatibility. This analysis examines
+                      every planetary aspect between both charts, including
+                      Venus-Mars connections for romantic chemistry, Moon-Moon
+                      aspects for emotional attunement, and Saturn contacts for
+                      long-term stability.
+                    </p>
+                    <p className="text-sm leading-relaxed text-dust-300 sm:text-base sm:leading-relaxed">
+                      The interaspect analysis between {sign1.name} and{' '}
+                      {sign2.name} reveals planetary connections that go far
+                      beyond sun-sign compatibility. Venus-Mars aspects illuminate
+                      the romantic and physical chemistry between you, while
+                      Moon-Moon contacts show how your emotional rhythms align.
+                      Saturn aspects indicate the karmic lessons and long-term
+                      stability potential of the bond.
+                    </p>
+                    <p className="text-sm leading-relaxed text-dust-300 sm:text-base sm:leading-relaxed">
+                      The composite chart midpoints highlight areas of extraordinary
+                      creative potential and shared purpose that grow stronger as
+                      the relationship matures. North Node connections reveal the
+                      spiritual growth this partnership is designed to catalyze,
+                      offering a roadmap for conscious evolution through love.
+                    </p>
                   </div>
-
-                  {/* Overlay CTA */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-gradient-to-t from-space-900/95 via-space-900/80 to-transparent">
-                    <div className="flex flex-col items-center gap-3 text-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-stardust-500/30 bg-stardust-500/10">
-                        <Lock size={18} className="text-stardust-400" />
-                      </div>
-                      <p className="text-sm font-medium text-dust-200">
-                        Unlock the full synastry analysis
-                      </p>
-                      <Link
-                        href="/pricing"
-                        className="btn-glow inline-flex items-center gap-2 !px-5 !py-2 text-xs"
-                      >
-                        <Sparkles size={12} />
-                        Get Premium Access
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                </PremiumGate>
               </div>
             </section>
           </div>

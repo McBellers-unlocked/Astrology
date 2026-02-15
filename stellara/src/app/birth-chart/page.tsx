@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import EmailCapture from '@/components/EmailCapture';
 import ShareChart from '@/components/ShareChart';
+import PremiumGate from '@/components/PremiumGate';
 
 /* ================================================================
    CONSTANTS & TYPES
@@ -915,85 +916,44 @@ function FullReportTab() {
   return (
     <div className="space-y-6 animate-in">
       <h3 className="text-xl font-semibold text-celestial-100 mb-4 flex items-center gap-2">
-        <Lock className="w-5 h-5 text-stardust-400" />
+        <Crown className="w-5 h-5 text-stardust-400" />
         Full Birth Chart Report
       </h3>
 
-      {/* Preview content */}
-      <div className="glass-card p-6">
-        <p className="text-dust-200 leading-relaxed mb-4">
-          Your natal chart reveals a complex tapestry of planetary influences that shape your personality,
-          relationships, career path, and spiritual evolution. The unique arrangement of celestial bodies
-          at the moment of your birth creates a cosmic blueprint that is entirely yours — no two charts
-          are ever identical.
-        </p>
-        <p className="text-dust-200 leading-relaxed mb-4">
-          The interplay between your Sun, Moon, and Rising signs forms the foundation of your
-          psychological makeup, while the positions of the outer planets reveal generational themes
-          and deeper karmic patterns that unfold throughout your lifetime...
-        </p>
-
-        {/* Blurred preview */}
-        <div className="relative">
-          <div className="blur-sm select-none pointer-events-none text-dust-300 leading-relaxed space-y-3">
-            <p>
-              Your Mercury placement indicates a mind that processes information through intuitive
-              channels rather than pure logic. You possess a rare ability to synthesize complex
-              ideas and communicate them with emotional depth that resonates with others on a
-              profound level.
-            </p>
-            <p>
-              Venus in your chart suggests a deeply romantic nature combined with a strong aesthetic
-              sensibility. Your approach to love is characterized by loyalty and intensity, though
-              you may struggle with vulnerability in the early stages of relationships.
-            </p>
-            <p>
-              The Mars placement reveals your driving force and how you assert yourself in the
-              world. Your particular configuration suggests a strategic approach to ambition, one
-              that values sustainability over quick victories.
-            </p>
-          </div>
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-space-900/70 to-space-900 flex items-end justify-center pb-4">
-            <Lock className="w-8 h-8 text-dust-500 animate-pulse" />
-          </div>
+      <PremiumGate
+        requiredTier="stellar"
+        featureName="your full birth chart report"
+        previewText="Your natal chart reveals a complex tapestry of planetary influences that shape your personality, relationships, career path, and spiritual evolution. The unique arrangement of celestial bodies at the moment of your birth creates a cosmic blueprint that is entirely yours."
+      >
+        <div className="glass-card p-6 space-y-4">
+          <p className="text-dust-200 leading-relaxed">
+            Your Mercury placement indicates a mind that processes information through intuitive
+            channels rather than pure logic. You possess a rare ability to synthesize complex
+            ideas and communicate them with emotional depth that resonates with others on a
+            profound level.
+          </p>
+          <p className="text-dust-200 leading-relaxed">
+            Venus in your chart suggests a deeply romantic nature combined with a strong aesthetic
+            sensibility. Your approach to love is characterized by loyalty and intensity, though
+            you may struggle with vulnerability in the early stages of relationships.
+          </p>
+          <p className="text-dust-200 leading-relaxed">
+            The Mars placement reveals your driving force and how you assert yourself in the
+            world. Your particular configuration suggests a strategic approach to ambition, one
+            that values sustainability over quick victories.
+          </p>
+          <p className="text-dust-200 leading-relaxed">
+            Jupiter&apos;s influence in your chart expands your natural talents and brings opportunities
+            for growth in areas related to higher learning, philosophy, and travel. Saturn&apos;s position
+            provides structure and discipline, teaching you to build lasting foundations.
+          </p>
+          <p className="text-dust-200 leading-relaxed">
+            The outer planets — Uranus, Neptune, and Pluto — colour your generational experience
+            and deeper spiritual journey. Their house positions reveal where in your life you
+            will encounter transformation, awakening, and transcendence.
+          </p>
         </div>
-      </div>
-
-      {/* Unlock CTA */}
-      <div className="glass-card p-8 text-center border border-stardust-500/20">
-        <div className="inline-flex items-center gap-2 mb-4">
-          <Crown className="w-6 h-6 text-stardust-400" />
-          <h4 className="text-lg font-bold text-stardust-300">Unlock Your Complete Birth Chart Report</h4>
-        </div>
-        <p className="text-dust-300 max-w-lg mx-auto mb-6 text-sm leading-relaxed">
-          Get a comprehensive, personalized analysis written by our astrological AI engine.
-          Over 15 pages of insights tailored specifically to your unique chart.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto mb-6 text-left">
-          {[
-            'In-depth personality analysis',
-            'Career and vocation guidance',
-            'Relationship patterns and compatibility',
-            'Life purpose and karmic insights',
-            'Year-ahead transit forecast',
-            'Personalized growth recommendations',
-          ].map((item) => (
-            <div key={item} className="flex items-center gap-2 text-sm text-dust-300">
-              <Star className="w-3.5 h-3.5 text-stardust-400 flex-shrink-0" />
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-        <a
-          href="/pricing"
-          className="btn-glow inline-flex items-center gap-2 px-8 py-3"
-        >
-          <Crown className="w-4 h-4" />
-          Upgrade to Premium
-          <ChevronRight className="w-4 h-4" />
-        </a>
-      </div>
+      </PremiumGate>
     </div>
   );
 }

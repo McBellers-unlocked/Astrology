@@ -10,7 +10,6 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Lock,
   Calendar,
   Flame,
   Droplets,
@@ -29,6 +28,7 @@ import {
   HOROSCOPE_RATINGS,
   getFullHoroscope,
 } from '@/lib/zodiac-data';
+import PremiumGate from '@/components/PremiumGate';
 
 /* -------------------------------------------------------------------------- */
 /*  Static generation                                                         */
@@ -132,14 +132,16 @@ function LuckyItem({
   );
 }
 
-function PremiumLockedSection({
+function PremiumReadingSection({
   title,
   icon: Icon,
-  previewText,
+  paragraphs,
+  featureName,
 }: {
   title: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  previewText: string;
+  paragraphs: string[];
+  featureName: string;
 }) {
   return (
     <div className="glass-card overflow-hidden">
@@ -147,57 +149,25 @@ function PremiumLockedSection({
         <div className="flex items-center gap-2">
           <Icon size={18} className="text-celestial-300" />
           <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          <span className="premium-badge ml-auto">Premium</span>
         </div>
       </div>
-
-      <div className="relative px-6 py-5">
-        {/* Visible preview paragraph */}
-        <p className="mb-4 text-sm leading-relaxed text-dust-300">
-          {previewText}
-        </p>
-
-        {/* Blurred / locked section */}
-        <div className="relative">
-          <div
-            className="select-none text-sm leading-relaxed text-dust-300"
-            style={{
-              filter: 'blur(6px)',
-              WebkitFilter: 'blur(6px)',
-              userSelect: 'none',
-            }}
-            aria-hidden="true"
-          >
-            The celestial alignment continues to reveal deeper patterns in your
-            emotional landscape. This transit activates hidden strengths and
-            brings unconscious desires to the surface. A pivotal moment of
-            self-understanding awaits as the planetary energies converge in your
-            chart, offering rare clarity on matters of the heart and soul. The
-            coming hours hold transformative potential that builds on the
-            foundation described above, weaving together threads of past
-            experience and future possibility into a tapestry of profound
-            personal growth.
-          </div>
-
-          {/* Overlay CTA */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-gradient-to-t from-space-900/95 via-space-900/80 to-transparent">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-stardust-500/30 bg-stardust-500/10">
-                <Lock size={18} className="text-stardust-400" />
-              </div>
-              <p className="text-sm font-medium text-dust-200">
-                Unlock with Stellara Premium
-              </p>
-              <Link
-                href="/pricing"
-                className="btn-glow inline-flex items-center gap-2 !px-5 !py-2 text-xs"
+      <div className="px-6 py-5">
+        <PremiumGate
+          requiredTier="stellar"
+          previewText={paragraphs[0]}
+          featureName={featureName}
+        >
+          <div className="space-y-4">
+            {paragraphs.map((p, i) => (
+              <p
+                key={i}
+                className="text-sm leading-relaxed text-dust-300 sm:text-base sm:leading-relaxed"
               >
-                <Sparkles size={12} />
-                Get Premium Access
-              </Link>
-            </div>
+                {p}
+              </p>
+            ))}
           </div>
-        </div>
+        </PremiumGate>
       </div>
     </div>
   );
@@ -304,17 +274,19 @@ export default async function SignHoroscopePage({ params }: PageProps) {
             </section>
 
             {/* Moon Sign Reading */}
-            <PremiumLockedSection
+            <PremiumReadingSection
               title="Your Moon Sign Reading"
               icon={Moon}
-              previewText={horoscope.moonReading[0]}
+              paragraphs={horoscope.moonReading}
+              featureName="Moon Sign readings"
             />
 
             {/* Rising Sign Reading */}
-            <PremiumLockedSection
+            <PremiumReadingSection
               title="Your Rising Sign Reading"
               icon={Sunrise}
-              previewText={horoscope.risingReading[0]}
+              paragraphs={horoscope.risingReading}
+              featureName="Rising Sign readings"
             />
           </div>
 

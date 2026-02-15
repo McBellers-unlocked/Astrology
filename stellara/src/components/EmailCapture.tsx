@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { Mail, Sparkles, Check, Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface EmailCaptureProps {
   /** Heading displayed above the input */
@@ -39,10 +40,8 @@ export default function EmailCapture({
     setStatus('loading');
 
     try {
-      // Store locally until an email service is connected
-      const stored = JSON.parse(localStorage.getItem('stellara_emails') || '[]');
-      stored.push({ email, source, timestamp: new Date().toISOString() });
-      localStorage.setItem('stellara_emails', JSON.stringify(stored));
+      // Send to API (Resend integration)
+      await api.post('/email/subscribe', { email, source });
 
       // Track event in GA4 if available
       if (typeof window !== 'undefined' && 'gtag' in window) {

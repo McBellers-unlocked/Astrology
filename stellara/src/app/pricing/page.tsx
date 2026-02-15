@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Check,
   Star,
@@ -10,10 +11,14 @@ import {
   ChevronDown,
   Users,
   Zap,
+  Loader2,
+  CheckCircle,
 } from 'lucide-react';
 import Container from '@/components/layout/Container';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 
 /* ------------------------------------------------------------------
    Tier data
@@ -185,8 +190,41 @@ function TierCard({
   tier: PricingTier;
   isAnnual: boolean;
 }) {
+  const { user, isPremium } = useAuth();
+  const router = useRouter();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const price = isAnnual ? tier.annualMonthly : tier.monthlyPrice;
   const isFree = tier.id === 'free';
+  const isCurrentPlan = user && (
+    (tier.id === 'free' && !isPremium) ||
+    (tier.id === user.subscriptionTier)
+  );
+
+  const handleCheckout = async () => {
+    if (isFree) {
+      router.push('/birth-chart');
+      return;
+    }
+
+    if (!user) {
+      router.push('/signup');
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      const data = await api.post<{ url: string }>('/checkout/create-session', {
+        tier: tier.id,
+        interval: isAnnual ? 'year' : 'month',
+      });
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Checkout failed:', err);
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <div
@@ -245,14 +283,32 @@ function TierCard({
 
         {/* CTA */}
         <div className="mb-8">
-          <Button
-            variant={tier.popular ? 'primary' : tier.id === 'cosmic' ? 'gold' : 'secondary'}
-            size="lg"
-            href={tier.ctaHref}
-            className="w-full"
-          >
-            {tier.cta}
-          </Button>
+          {isCurrentPlan ? (
+            <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-aurora-500/20 bg-aurora-500/10 py-3 text-sm font-medium text-aurora-300">
+              <CheckCircle className="h-4 w-4" />
+              Current Plan
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
+              className={`btn-glow flex w-full items-center justify-center gap-2 py-3 text-sm font-medium disabled:opacity-60 ${
+                tier.id === 'cosmic' ? 'bg-gradient-to-r from-stardust-500 to-nebula-500' : ''
+              }`}
+            >
+              {checkoutLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Redirecting to checkout...
+                </>
+              ) : !user && !isFree ? (
+                'Sign Up to Start Trial'
+              ) : (
+                tier.cta
+              )}
+            </button>
+          )}
         </div>
 
         {/* Features */}
@@ -287,8 +343,17 @@ function TierCard({
    ------------------------------------------------------------------ */
 
 export default function PricingPage() {
+  const searchParams = useSearchParams();
+  const checkoutSuccess = searchParams.get('success') === '1';
+  const checkoutCanceled = searchParams.get('canceled') === '1';
+  const { refreshUser } = useAuth();
   const [isAnnual, setIsAnnual] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+
+  // Refresh user data after successful checkout
+  if (checkoutSuccess) {
+    refreshUser();
+  }
 
   /* FAQ structured data for AEO / Answer Engine Optimisation */
   const faqSchema = {
@@ -311,6 +376,21 @@ export default function PricingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
+
+      {/* Checkout result banners */}
+      {checkoutSuccess && (
+        <div className="mx-auto mb-8 max-w-lg rounded-xl border border-aurora-500/20 bg-aurora-500/10 px-6 py-4 text-center">
+          <CheckCircle className="mx-auto mb-2 h-6 w-6 text-aurora-400" />
+          <p className="font-semibold text-aurora-300">Welcome to Stellara Premium!</p>
+          <p className="mt-1 text-sm text-dust-400">Your subscription is now active. Enjoy the full cosmic experience.</p>
+        </div>
+      )}
+      {checkoutCanceled && (
+        <div className="mx-auto mb-8 max-w-lg rounded-xl border border-stardust-500/20 bg-stardust-500/10 px-6 py-4 text-center">
+          <p className="font-semibold text-stardust-300">Checkout canceled</p>
+          <p className="mt-1 text-sm text-dust-400">No worries — you can start your trial anytime.</p>
+        </div>
+      )}
 
       {/* Ambient glow */}
       <div

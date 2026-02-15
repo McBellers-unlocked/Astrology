@@ -12,6 +12,7 @@ import {
   Sparkles,
   Lock,
   Calendar,
+  Crown,
 } from 'lucide-react';
 import {
   SIGNS,
@@ -19,6 +20,7 @@ import {
   HOROSCOPE_TEASERS,
   HOROSCOPE_RATINGS,
 } from '@/lib/zodiac-data';
+import { useAuth } from '@/lib/auth-context';
 import EmailCapture from '@/components/EmailCapture';
 
 type TabKey = 'sun' | 'moon' | 'rising';
@@ -132,6 +134,7 @@ function ZodiacCard({ sign }: { sign: (typeof SIGNS)[number] }) {
 
 export default function HoroscopeHubPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('sun');
+  const { user, isPremium } = useAuth();
   const today = new Date();
   const formattedDate = format(today, 'EEEE, MMMM do, yyyy');
 
@@ -165,51 +168,55 @@ export default function HoroscopeHubPage() {
 
           {/* Tab Switcher */}
           <div className="mx-auto inline-flex rounded-xl border border-white/[0.06] bg-space-800/60 p-1 backdrop-blur-sm">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  if (!tab.premium) {
-                    setActiveTab(tab.key);
-                  }
-                }}
-                className={`relative flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                  activeTab === tab.key
-                    ? 'bg-celestial-500/20 text-foreground shadow-[0_0_12px_rgba(124,58,237,0.15)]'
-                    : tab.premium
-                      ? 'cursor-not-allowed text-dust-500 hover:text-dust-400'
-                      : 'text-dust-400 hover:bg-white/[0.03] hover:text-foreground'
-                }`}
-                aria-pressed={activeTab === tab.key}
-                disabled={tab.premium}
-              >
-                {tab.label}
-                {tab.premium && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-stardust-500/25 bg-stardust-500/10 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-stardust-400">
-                    <Lock size={8} />
-                    Pro
-                  </span>
-                )}
-              </button>
-            ))}
+            {TABS.map((tab) => {
+              const locked = tab.premium && !isPremium;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => {
+                    if (!locked) setActiveTab(tab.key);
+                  }}
+                  className={`relative flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    activeTab === tab.key
+                      ? 'bg-celestial-500/20 text-foreground shadow-[0_0_12px_rgba(124,58,237,0.15)]'
+                      : locked
+                        ? 'cursor-not-allowed text-dust-500 hover:text-dust-400'
+                        : 'text-dust-400 hover:bg-white/[0.03] hover:text-foreground'
+                  }`}
+                  aria-pressed={activeTab === tab.key}
+                  disabled={locked}
+                >
+                  {tab.label}
+                  {tab.premium && !isPremium && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-stardust-500/25 bg-stardust-500/10 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-stardust-400">
+                      <Lock size={8} />
+                      Pro
+                    </span>
+                  )}
+                  {tab.premium && isPremium && (
+                    <Crown size={12} className="text-stardust-400" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </header>
 
-        {/* Premium banner for locked tabs */}
-        {activeTab !== 'sun' && (
+        {/* Premium banner for locked tabs (only shown to non-premium users) */}
+        {activeTab !== 'sun' && !isPremium && (
           <div className="mb-10 rounded-2xl border border-stardust-500/20 bg-gradient-to-r from-stardust-500/5 via-celestial-500/5 to-nebula-500/5 p-6 text-center">
             <Lock size={20} className="mx-auto mb-2 text-stardust-400" />
             <p className="mb-3 text-sm text-dust-300">
-              {activeTab === 'moon' ? 'Moon Sign' : 'Rising Sign'} readings
-              require a Stellara Premium subscription for personalized insights
-              based on your full birth chart.
+              {user
+                ? `${activeTab === 'moon' ? 'Moon Sign' : 'Rising Sign'} readings require a Stellara Premium subscription for personalized insights based on your full birth chart.`
+                : `Sign up free and upgrade to Premium to unlock ${activeTab === 'moon' ? 'Moon Sign' : 'Rising Sign'} readings.`}
             </p>
             <Link
-              href="/pricing"
+              href={user ? '/pricing' : '/signup'}
               className="btn-glow inline-flex items-center gap-2 !px-6 !py-2.5 text-sm"
             >
               <Sparkles size={14} />
-              Unlock Premium Readings
+              {user ? 'Unlock Premium Readings' : 'Create Free Account'}
             </Link>
           </div>
         )}

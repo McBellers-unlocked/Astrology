@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import Starfield from "@/components/layout/Starfield";
 import JsonLd from "@/components/seo/JsonLd";
 import Analytics from "@/components/Analytics";
+import Providers from "@/components/Providers";
 
 const inter = Inter({
   variable: "--font-body",
@@ -125,13 +126,15 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${plusJakarta.variable} antialiased min-h-screen flex flex-col`}
       >
-        <Analytics />
-        <Starfield />
-        <Header />
-        <main className="relative z-10 flex-1 pt-16 lg:pt-18">
-          {children}
-        </main>
-        <Footer />
+        <Providers>
+          <Analytics />
+          <Starfield />
+          <Header />
+          <main className="relative z-10 flex-1 pt-16 lg:pt-18">
+            {children}
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

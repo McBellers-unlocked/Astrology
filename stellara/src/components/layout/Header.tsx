@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Sparkles, Menu, X, ChevronRight, User } from "lucide-react";
+import { Sparkles, Menu, X, ChevronRight, User, LogOut, Crown } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface NavItem {
   label: string;
@@ -19,8 +20,10 @@ const navItems: NavItem[] = [
 ];
 
 export default function Header() {
+  const { user, isLoading, isPremium, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,6 +51,12 @@ export default function Header() {
   const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+  };
 
   return (
     <>
@@ -83,16 +92,76 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Right side: Sign In + CTA + Mobile Menu Button */}
+          {/* Right side: Auth + CTA + Mobile Menu Button */}
           <div className="flex items-center gap-3">
-            {/* Sign In link (desktop only) */}
-            <Link
-              href="/pricing"
-              className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-dust-400 transition-colors hover:text-foreground lg:flex"
-            >
-              <User className="h-4 w-4" />
-              <span>Sign In</span>
-            </Link>
+            {!isLoading && !user && (
+              /* Logged out — Sign In link (desktop only) */
+              <Link
+                href="/login"
+                className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-dust-400 transition-colors hover:text-foreground lg:flex"
+              >
+                <User className="h-4 w-4" />
+                <span>Sign In</span>
+              </Link>
+            )}
+
+            {!isLoading && user && (
+              /* Logged in — User menu (desktop only) */
+              <div className="relative hidden lg:block">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-celestial-700/30 text-xs font-bold text-celestial-200">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="max-w-[100px] truncate">{user.name}</span>
+                  {isPremium && (
+                    <Crown className="h-3.5 w-3.5 text-stardust-400" />
+                  )}
+                </button>
+
+                {userMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setUserMenuOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <div className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-xl border border-celestial-700/20 bg-space-800/95 shadow-lg shadow-space-900/60 backdrop-blur-xl">
+                      <div className="border-b border-celestial-700/15 px-4 py-3">
+                        <p className="text-sm font-medium text-foreground">{user.name}</p>
+                        <p className="text-xs text-dust-500">{user.email}</p>
+                        {isPremium && (
+                          <span className="premium-badge mt-1 inline-block text-[10px]">
+                            {user.subscriptionTier === 'cosmic' ? 'Cosmic' : 'Stellar'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-1.5">
+                        <Link
+                          href="/pricing"
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Crown className="h-4 w-4" />
+                          {isPremium ? 'Manage Plan' : 'Upgrade'}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* CTA Button (desktop) */}
             <Link
@@ -179,15 +248,52 @@ export default function Header() {
             {/* Divider */}
             <div className="my-4 h-px bg-gradient-to-r from-transparent via-celestial-700/30 to-transparent" />
 
-            {/* Sign In (mobile) */}
-            <Link
-              href="/pricing"
-              className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
-              onClick={closeMobileMenu}
-            >
-              <User className="h-4.5 w-4.5" />
-              <span>Sign In</span>
-            </Link>
+            {/* Auth section (mobile) */}
+            {!isLoading && !user && (
+              <>
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
+                  onClick={closeMobileMenu}
+                >
+                  <User className="h-4.5 w-4.5" />
+                  <span>Sign In</span>
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-celestial-300 transition-colors hover:bg-celestial-700/15"
+                  onClick={closeMobileMenu}
+                >
+                  <Sparkles className="h-4.5 w-4.5" />
+                  <span>Create Account</span>
+                </Link>
+              </>
+            )}
+
+            {!isLoading && user && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-3 px-3 py-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-celestial-700/30 text-sm font-bold text-celestial-200">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{user.name}</p>
+                    <p className="text-xs text-dust-500">{user.email}</p>
+                  </div>
+                  {isPremium && (
+                    <Crown className="ml-auto h-4 w-4 text-stardust-400" />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
+                >
+                  <LogOut className="h-4.5 w-4.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
           </nav>
 
           {/* Drawer Footer CTA */}
