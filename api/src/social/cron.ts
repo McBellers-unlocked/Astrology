@@ -9,6 +9,7 @@
 
 import { SIGNS, HOROSCOPE_TEASERS, HOROSCOPE_RATINGS, getFullHoroscope } from './content.js';
 import { postToTwitter } from './twitter.js';
+import { PostResult, sendFailureAlert, appendResults } from './notify.js';
 
 /* Re-use the same generation logic from post.ts */
 
@@ -227,6 +228,8 @@ async function main() {
 
   console.log(`[${new Date().toISOString()}] ${duePosts.length} posts due:`);
 
+  const results: PostResult[] = [];
+
   for (const post of duePosts) {
     console.log(`  ${post.scheduledFor} | ${post.type} ${post.sign ?? ''}`);
 
@@ -234,8 +237,27 @@ async function main() {
       try {
         const result = await postToTwitter(post.text);
         console.log(`  ✓ Posted to Twitter: ${result.id}`);
+        results.push({
+          timestamp: new Date().toISOString(),
+          scheduledFor: post.scheduledFor,
+          type: post.type,
+          sign: post.sign,
+          success: true,
+          tweetId: result.id,
+        });
       } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
         console.error(`  ✗ Failed:`, err);
+        const failResult: PostResult = {
+          timestamp: new Date().toISOString(),
+          scheduledFor: post.scheduledFor,
+          type: post.type,
+          sign: post.sign,
+          success: false,
+          error: errorMsg,
+        };
+        results.push(failResult);
+        await sendFailureAlert(failResult);
       }
     } else {
       console.log(`  [dry] ${post.text.slice(0, 80)}...`);
@@ -243,6 +265,11 @@ async function main() {
 
     // Space out posts by 10 seconds to avoid rate limits
     await new Promise((r) => setTimeout(r, 10_000));
+  }
+
+  // Persist results for daily digest
+  if (results.length > 0) {
+    appendResults(results);
   }
 }
 
