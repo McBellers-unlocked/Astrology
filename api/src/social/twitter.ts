@@ -17,6 +17,7 @@ const ACCESS_TOKEN = process.env.TWITTER_ACCESS_TOKEN ?? '';
 const ACCESS_SECRET = process.env.TWITTER_ACCESS_SECRET ?? '';
 
 const TWEET_URL = 'https://api.twitter.com/2/tweets';
+const MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json';
 
 interface TweetResult {
   id: string;
@@ -24,7 +25,7 @@ interface TweetResult {
 }
 
 /** Build OAuth 1.0a Authorization header */
-function buildOAuthHeader(method: string, url: string, body: string): string {
+function buildOAuthHeader(method: string, url: string, extraParams?: Record<string, string>): string {
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const nonce = crypto.randomBytes(16).toString('hex');
 
@@ -35,6 +36,7 @@ function buildOAuthHeader(method: string, url: string, body: string): string {
     oauth_timestamp: timestamp,
     oauth_token: ACCESS_TOKEN,
     oauth_version: '1.0',
+    ...extraParams,
   };
 
   // Create signature base string
@@ -57,7 +59,9 @@ function buildOAuthHeader(method: string, url: string, body: string): string {
 
   params['oauth_signature'] = signature;
 
+  // Only include oauth_ params in the header (not extra body params)
   const header = Object.keys(params)
+    .filter((k) => k.startsWith('oauth_'))
     .sort()
     .map((k) => `${encodeURIComponent(k)}="${encodeURIComponent(params[k])}"`)
     .join(', ');
@@ -65,8 +69,42 @@ function buildOAuthHeader(method: string, url: string, body: string): string {
   return `OAuth ${header}`;
 }
 
-/** Post a tweet via Twitter API v2 */
-export async function postToTwitter(text: string): Promise<TweetResult> {
+/** Upload an image to Twitter and return the media_id_string */
+export async function uploadMedia(imageBuffer: Buffer): Promise<string> {
+  if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_SECRET) {
+    throw new Error('Twitter API credentials not configured');
+  }
+
+  const mediaData = imageBuffer.toString('base64');
+
+  // For media upload, include media_data in the signature
+  const authHeader = buildOAuthHeader('POST', MEDIA_UPLOAD_URL, {
+    media_data: mediaData,
+  });
+
+  // Build form-urlencoded body
+  const body = `media_data=${encodeURIComponent(mediaData)}`;
+
+  const res = await fetch(MEDIA_UPLOAD_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Twitter media upload error (${res.status}): ${error}`);
+  }
+
+  const data = (await res.json()) as { media_id_string: string };
+  return data.media_id_string;
+}
+
+/** Post a tweet via Twitter API v2, optionally with an attached image */
+export async function postToTwitter(text: string, mediaId?: string): Promise<TweetResult> {
   if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_SECRET) {
     throw new Error('Twitter API credentials not configured');
   }
@@ -74,8 +112,13 @@ export async function postToTwitter(text: string): Promise<TweetResult> {
   // Twitter character limit is 280
   const trimmedText = text.length > 280 ? text.slice(0, 277) + '...' : text;
 
-  const body = JSON.stringify({ text: trimmedText });
-  const authHeader = buildOAuthHeader('POST', TWEET_URL, body);
+  const tweetBody: Record<string, unknown> = { text: trimmedText };
+  if (mediaId) {
+    tweetBody.media = { media_ids: [mediaId] };
+  }
+
+  const body = JSON.stringify(tweetBody);
+  const authHeader = buildOAuthHeader('POST', TWEET_URL);
 
   const res = await fetch(TWEET_URL, {
     method: 'POST',

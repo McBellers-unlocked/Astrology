@@ -8,8 +8,9 @@
 //   */30 7-22 * * * cd ~/Astrology/api && npx tsx src/social/cron.ts >> ~/social-posts.log 2>&1
 
 import { SIGNS, HOROSCOPE_TEASERS, HOROSCOPE_RATINGS, getFullHoroscope } from './content.js';
-import { postToTwitter } from './twitter.js';
+import { postToTwitter, uploadMedia } from './twitter.js';
 import { PostResult, sendFailureAlert, appendResults } from './notify.js';
+import { generateHoroscopeCard, generateEngagementCard } from './image.js';
 
 /* Re-use the same generation logic from post.ts */
 
@@ -328,7 +329,14 @@ async function main() {
 
     if (process.env.TWITTER_API_KEY) {
       try {
-        const result = await postToTwitter(post.text);
+        // Generate and upload image
+        const imageBuffer = post.type === 'horoscope' && post.sign
+          ? await generateHoroscopeCard(post.sign)
+          : await generateEngagementCard();
+        const mediaId = await uploadMedia(imageBuffer);
+        console.log(`  📷 Image uploaded: ${mediaId}`);
+
+        const result = await postToTwitter(post.text, mediaId);
         console.log(`  ✓ Posted to Twitter: ${result.id}`);
         results.push({
           timestamp: new Date().toISOString(),
