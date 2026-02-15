@@ -1,10 +1,15 @@
 import { Resend } from 'resend';
 
-if (!process.env.RESEND_API_KEY) {
-  console.warn('RESEND_API_KEY is not set — email features will fail');
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
+if (!RESEND_API_KEY) {
+  console.warn('RESEND_API_KEY is not set — email features will be disabled');
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY ?? '');
+// Only create a real client if the key exists; otherwise use a stub
+const resend = RESEND_API_KEY
+  ? new Resend(RESEND_API_KEY)
+  : ({ emails: { send: async () => { console.warn('Email skipped — no RESEND_API_KEY'); return { data: null, error: null }; } } } as unknown as Resend);
 
 export default resend;
 
