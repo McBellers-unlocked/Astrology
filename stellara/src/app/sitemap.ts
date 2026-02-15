@@ -4,7 +4,7 @@ import { BLOG_POSTS } from '@/data/blog-posts';
 
 export const dynamic = 'force-static';
 
-const BASE_URL = 'https://stellara.co';
+const BASE_URL = 'https://stellera.co';
 
 const SIGNS: ZodiacSign[] = [
   'aries', 'taurus', 'gemini', 'cancer',

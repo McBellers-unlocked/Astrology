@@ -10,7 +10,7 @@ import webhookRoutes from './routes/webhooks.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://stellara.co';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://stellera.co';
 
 // Security headers
 app.use(helmet());

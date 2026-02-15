@@ -71,16 +71,16 @@ export default async function BlogPostPage({
     author: {
       '@type': 'Organization',
       name: 'Stellara',
-      url: 'https://stellara.co',
+      url: 'https://stellera.co',
     },
     publisher: {
       '@type': 'Organization',
       name: 'Stellara',
-      url: 'https://stellara.co',
+      url: 'https://stellera.co',
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://stellara.co/blog/${post.slug}`,
+      '@id': `https://stellera.co/blog/${post.slug}`,
     },
   };
 

@@ -57,7 +57,7 @@ router.post('/signup', async (req, res) => {
               <li><strong>Check compatibility</strong> &mdash; explore chemistry with any sign</li>
             </ul>
             <p style="margin-top: 24px;">
-              <a href="https://stellara.co/birth-chart" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get Your Free Birth Chart</a>
+              <a href="https://stellera.co/birth-chart" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get Your Free Birth Chart</a>
             </p>
             <p style="color: #666; font-size: 13px; margin-top: 32px;">Your stars, decoded. &mdash; Stellara</p>
           </div>

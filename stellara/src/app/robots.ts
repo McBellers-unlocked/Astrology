@@ -10,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
       },
     ],
-    sitemap: 'https://stellara.co/sitemap.xml',
+    sitemap: 'https://stellera.co/sitemap.xml',
   };
 }

@@ -3,7 +3,7 @@ import db from '../db.js';
 import stripe, { getPriceId } from '../lib/stripe.js';
 import { requireAuth } from '../middleware/auth.js';
 
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://stellara.co';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://stellera.co';
 
 const router = Router();
 

@@ -22,7 +22,7 @@ export default function ShareChart({ sunSign, moonSign, risingSign, name }: Shar
     ? `${name}'s Big Three: ☀️ ${sunSign} Sun, 🌙 ${moonSign} Moon, ⬆️ ${risingSign} Rising — Discover yours free at Stellara`
     : `My Big Three: ☀️ ${sunSign} Sun, 🌙 ${moonSign} Moon, ⬆️ ${risingSign} Rising — Discover yours free at Stellara`;
 
-  const shareUrl = 'https://stellara.co/birth-chart';
+  const shareUrl = 'https://stellera.co/birth-chart';
 
   const handleCopyLink = async () => {
     try {

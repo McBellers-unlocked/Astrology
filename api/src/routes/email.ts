@@ -39,7 +39,7 @@ router.post('/subscribe', async (req, res) => {
               <li>Weekly cosmic energy forecasts</li>
             </ul>
             <p style="margin-top: 24px;">
-              <a href="https://stellara.co/horoscope" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Read Today&rsquo;s Horoscope</a>
+              <a href="https://stellera.co/horoscope" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Read Today&rsquo;s Horoscope</a>
             </p>
             <p style="color: #666; font-size: 13px; margin-top: 32px;">Your stars, decoded. &mdash; Stellara</p>
           </div>

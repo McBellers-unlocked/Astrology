@@ -21,7 +21,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://stellara.co"),
+  metadataBase: new URL("https://stellera.co"),
   title: {
     default: "Stellara — Your Stars, Decoded | Astrology, Birth Charts & Horoscopes",
     template: "%s | Stellara",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://stellara.co",
+    url: "https://stellera.co",
     siteName: "Stellara",
     title: "Stellara — Your Stars, Decoded",
     description:
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     title: "Stellara — Your Stars, Decoded",
     description:
       "Professional-grade birth charts, AI-powered daily horoscopes, and deep compatibility analysis.",
-    creator: "@stellara_co",
+    creator: "@stellera_co",
   },
   robots: {
     index: true,
@@ -65,14 +65,14 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://stellara.co",
+    canonical: "https://stellera.co",
     languages: {
-      "en-US": "https://stellara.co",
-      "en-GB": "https://stellara.co/en-gb",
-      "es": "https://stellara.co/es",
-      "pt": "https://stellara.co/pt",
-      "fr": "https://stellara.co/fr",
-      "hi": "https://stellara.co/hi",
+      "en-US": "https://stellera.co",
+      "en-GB": "https://stellera.co/en-gb",
+      "es": "https://stellera.co/es",
+      "pt": "https://stellera.co/pt",
+      "fr": "https://stellera.co/fr",
+      "hi": "https://stellera.co/hi",
     },
   },
 };
@@ -82,13 +82,13 @@ const websiteSchema = {
   "@type": "WebSite",
   name: "Stellara",
   alternateName: "Stellara Astrology",
-  url: "https://stellara.co",
+  url: "https://stellera.co",
   description: "Professional-grade astrology platform with birth charts, daily horoscopes, and compatibility analysis.",
   potentialAction: {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: "https://stellara.co/search?q={search_term_string}",
+      urlTemplate: "https://stellera.co/search?q={search_term_string}",
     },
     "query-input": "required name=search_term_string",
   },
@@ -98,17 +98,17 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "Stellara",
-  url: "https://stellara.co",
-  logo: "https://stellara.co/logo.png",
+  url: "https://stellera.co",
+  logo: "https://stellera.co/logo.png",
   sameAs: [
-    "https://twitter.com/stellara_co",
-    "https://instagram.com/stellara_co",
-    "https://tiktok.com/@stellara_co",
+    "https://twitter.com/stellera_co",
+    "https://instagram.com/stellera_co",
+    "https://tiktok.com/@stellera_co",
   ],
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer service",
-    email: "hello@stellara.co",
+    email: "hello@stellera.co",
   },
 };
 

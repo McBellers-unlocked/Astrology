@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.stellara.co';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.stellera.co';
 const TOKEN_KEY = 'stellara_token';
 
 export function getToken(): string | null {
