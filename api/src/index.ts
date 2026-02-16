@@ -14,13 +14,18 @@ const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://stellera.co';
 
-// Security headers
-app.use(helmet());
+// Security headers — relax policies that conflict with cross-origin API calls
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: false,
+  }),
+);
 
 // CORS — only allow the Stellara frontend
 app.use(
   cors({
-    origin: [FRONTEND_URL, 'http://localhost:3000'],
+    origin: [FRONTEND_URL, FRONTEND_URL.replace('://', '://www.'), 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }),
