@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import {
   Star,
   Heart,
@@ -11,7 +10,6 @@ import {
   ArrowRight,
   Sparkles,
   Lock,
-  Calendar,
   Crown,
 } from 'lucide-react';
 import {
@@ -22,6 +20,7 @@ import {
 } from '@/lib/zodiac-data';
 import { useAuth } from '@/lib/auth-context';
 import EmailCapture from '@/components/EmailCapture';
+import TodayDate from '@/components/TodayDate';
 
 type TabKey = 'sun' | 'moon' | 'rising';
 
@@ -135,8 +134,6 @@ function ZodiacCard({ sign }: { sign: (typeof SIGNS)[number] }) {
 export default function HoroscopeHubPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('sun');
   const { user, isPremium } = useAuth();
-  const today = new Date();
-  const formattedDate = format(today, 'EEEE, MMMM do, yyyy');
 
   return (
     <main className="relative min-h-screen">
@@ -159,11 +156,8 @@ export default function HoroscopeHubPage() {
             Daily Cosmic Forecast
           </h1>
 
-          <div className="mb-8 flex items-center justify-center gap-2 text-dust-400">
-            <Calendar size={16} />
-            <time dateTime={today.toISOString().split('T')[0]}>
-              {formattedDate}
-            </time>
+          <div className="mb-8">
+            <TodayDate />
           </div>
 
           {/* Tab Switcher */}

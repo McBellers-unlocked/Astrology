@@ -10,7 +10,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Calendar,
+
   Flame,
   Droplets,
   Wind,
@@ -29,6 +29,7 @@ import {
   getFullHoroscope,
 } from '@/lib/zodiac-data';
 import PremiumGate from '@/components/PremiumGate';
+import TodayDate from '@/components/TodayDate';
 
 /* -------------------------------------------------------------------------- */
 /*  Static generation                                                         */
@@ -191,9 +192,6 @@ export default async function SignHoroscopePage({ params }: PageProps) {
   const elementStyle = ELEMENT_COLORS[sign.element];
   const ElementIcon = ELEMENT_ICONS[sign.element];
 
-  const today = new Date();
-  const formattedDate = format(today, 'EEEE, MMMM do, yyyy');
-
   return (
     <main className="relative min-h-screen">
       {/* Background decorations */}
@@ -240,11 +238,8 @@ export default async function SignHoroscopePage({ params }: PageProps) {
             </span>
           </div>
 
-          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-dust-400">
-            <Calendar size={14} />
-            <time dateTime={today.toISOString().split('T')[0]}>
-              {formattedDate}
-            </time>
+          <div className="mt-4 text-sm">
+            <TodayDate />
           </div>
         </header>
 
