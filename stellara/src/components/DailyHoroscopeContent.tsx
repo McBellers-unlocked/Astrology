@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import {
   Star,
   Heart,
@@ -16,6 +17,7 @@ import {
 import Link from 'next/link';
 import PremiumGate from '@/components/PremiumGate';
 import { useDailyHoroscope } from '@/hooks/use-daily-horoscope';
+import { trackEvent, trackMetaEvent } from '@/components/Analytics';
 
 /* -------------------------------------------------------------------------- */
 /*  Helper components                                                         */
@@ -189,6 +191,12 @@ interface Props {
 
 export default function DailyHoroscopeContent({ slug, signName }: Props) {
   const content = useDailyHoroscope(slug);
+
+  // Fire ViewContent for Meta Pixel retargeting
+  useEffect(() => {
+    trackEvent('view_horoscope', { sign: slug });
+    trackMetaEvent('ViewContent', { content_name: signName, content_category: 'horoscope' });
+  }, [slug, signName]);
 
   if (!content) return <ContentSkeleton />;
 

@@ -97,11 +97,10 @@ db.exec(`
   );
 `);
 
-// Add email_unsubscribed column if it doesn't exist yet (safe to re-run)
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`);
-} catch {
-  // Column already exists — ignore
-}
+// Add columns that were introduced after initial schema (safe to re-run)
+try { db.exec(`ALTER TABLE users ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`); } catch { /* exists */ }
+try { db.exec(`ALTER TABLE users ADD COLUMN utm_source TEXT`); } catch { /* exists */ }
+try { db.exec(`ALTER TABLE users ADD COLUMN utm_medium TEXT`); } catch { /* exists */ }
+try { db.exec(`ALTER TABLE users ADD COLUMN utm_campaign TEXT`); } catch { /* exists */ }
 
 export default db;

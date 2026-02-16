@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { Mail, Sparkles, Check, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { trackMetaEvent } from '@/components/Analytics';
 
 interface EmailCaptureProps {
   /** Heading displayed above the input */
@@ -52,6 +53,9 @@ export default function EmailCapture({
           value: 1,
         });
       }
+
+      // Track as Lead in Meta Pixel for lookalike audience building
+      trackMetaEvent('Lead');
 
       setStatus('success');
       setEmail('');

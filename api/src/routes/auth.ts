@@ -13,7 +13,7 @@ const router = Router();
    ---------------------------------------------------------------- */
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, utm_source, utm_medium, utm_campaign } = req.body;
 
     if (!email || !password || !name) {
       res.status(400).json({ error: 'Email, password, and name are required' });
@@ -36,8 +36,8 @@ router.post('/signup', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
 
     db.prepare(
-      'INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)',
-    ).run(id, email.toLowerCase().trim(), passwordHash, name.trim());
+      'INSERT INTO users (id, email, password_hash, name, utm_source, utm_medium, utm_campaign) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run(id, email.toLowerCase().trim(), passwordHash, name.trim(), utm_source || null, utm_medium || null, utm_campaign || null);
 
     const token = signToken({ userId: id, email: email.toLowerCase().trim() });
 

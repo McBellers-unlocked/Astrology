@@ -34,10 +34,20 @@ app.use(
 // Stripe webhooks need the raw body — mount BEFORE json parser
 app.use('/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
 
-// JSON body parser for all other routes
-app.use(express.json());
+// JSON body parser for all other routes (with size limit)
+app.use(express.json({ limit: '1mb' }));
 
-// Rate limiting on auth routes
+// Global rate limiter — 100 requests per 15min per IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' },
+});
+app.use(globalLimiter);
+
+// Stricter rate limits for sensitive routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
@@ -46,9 +56,17 @@ const authLimiter = rateLimit({
   message: { error: 'Too many attempts. Please try again in 15 minutes.' },
 });
 
+const emailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many subscribe attempts. Please try again later.' },
+});
+
 // Routes
 app.use('/auth', authLimiter, authRoutes);
-app.use('/email', emailRoutes);
+app.use('/email', emailLimiter, emailRoutes);
 app.use('/checkout', checkoutRoutes);
 app.use('/horoscopes', horoscopeRoutes);
 app.use('/charts', chartRoutes);

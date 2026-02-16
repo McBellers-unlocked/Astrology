@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { api, setToken, clearToken, getToken } from './api';
+import { getUtmParams } from './tracking';
 
 export interface User {
   id: string;
@@ -82,10 +83,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (name: string, email: string, password: string) => {
+    const utm = getUtmParams();
     const data = await api.post<{ token: string; user: User }>('/auth/signup', {
       name,
       email,
       password,
+      ...(utm && {
+        utm_source: utm.utm_source,
+        utm_medium: utm.utm_medium,
+        utm_campaign: utm.utm_campaign,
+      }),
     });
     setToken(data.token);
     setUser(data.user);

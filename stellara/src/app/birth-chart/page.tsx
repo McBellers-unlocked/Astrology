@@ -26,6 +26,7 @@ import {
 import EmailCapture from '@/components/EmailCapture';
 import ShareChart from '@/components/ShareChart';
 import PremiumGate from '@/components/PremiumGate';
+import { trackEvent, trackMetaEvent } from '@/components/Analytics';
 import { generateBirthChart } from '@/lib/astrology/engine';
 import { ZODIAC_SIGNS as ZODIAC_SIGN_DATA, ZODIAC_ORDER } from '@/data/zodiac/signs';
 import { geocodeLocation } from '@/lib/geocoding';
@@ -930,6 +931,10 @@ export default function BirthChartPage() {
 
         setChartData(data);
         setActiveTab('Chart Overview');
+
+        // Track chart generation for analytics and Meta retargeting
+        trackEvent('generate_chart', { sign: data.sunSign });
+        trackMetaEvent('ViewContent', { content_name: 'birth_chart', content_category: data.sunSign });
 
         // Auto-save birth data to profile if user is logged in
         if (user) {

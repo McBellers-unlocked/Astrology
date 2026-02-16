@@ -361,10 +361,17 @@ function PricingPageInner() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
-  // Refresh user data after successful checkout
+  // Refresh user data after successful checkout + fire conversion events
   useEffect(() => {
     if (checkoutSuccess) {
-      refreshUser();
+      refreshUser().then(() => {
+        // Guard against double-firing on page refresh
+        if (sessionStorage.getItem('stellara_purchase_tracked')) return;
+        sessionStorage.setItem('stellara_purchase_tracked', '1');
+
+        trackEvent('purchase', { currency: 'USD' });
+        trackMetaEvent('Purchase', { currency: 'USD' });
+      });
     }
   }, [checkoutSuccess, refreshUser]);
 
