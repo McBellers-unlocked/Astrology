@@ -19,6 +19,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { trackEvent, trackMetaEvent } from '@/components/Analytics';
 
 /* ------------------------------------------------------------------
    Tier data
@@ -213,6 +214,8 @@ function TierCard({
 
     setCheckoutLoading(true);
     try {
+      trackEvent('begin_checkout', { tier: tier.id, interval: isAnnual ? 'year' : 'month' });
+      trackMetaEvent('InitiateCheckout', { content_name: tier.id, value: isAnnual ? tier.annualPrice : tier.monthlyPrice });
       const data = await api.post<{ url: string }>('/checkout/create-session', {
         tier: tier.id,
         interval: isAnnual ? 'year' : 'month',

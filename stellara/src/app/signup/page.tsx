@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, User, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { trackEvent, trackMetaEvent } from '@/components/Analytics';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -28,6 +29,8 @@ export default function SignupPage() {
 
     try {
       await signup(name, email, password);
+      trackEvent('sign_up', { method: 'email' });
+      trackMetaEvent('CompleteRegistration');
       router.push('/birth-chart');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');

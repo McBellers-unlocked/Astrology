@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, Twitter, Link2, Check, MessageCircle } from 'lucide-react';
+import { Share2, Twitter, Link2, Check, MessageCircle, Download } from 'lucide-react';
 
 interface ShareChartProps {
   /** User's Sun sign */
@@ -45,6 +45,27 @@ export default function ShareChart({ sunSign, moonSign, risingSign, name }: Shar
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.stellera.co';
+  const cardUrl = `${apiUrl}/charts/big3-card?sun=${encodeURIComponent(sunSign.toLowerCase())}&moon=${encodeURIComponent(moonSign.toLowerCase())}&rising=${encodeURIComponent(risingSign.toLowerCase())}${name ? `&name=${encodeURIComponent(name)}` : ''}`;
+
+  const handleDownloadCard = async () => {
+    try {
+      const res = await fetch(cardUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `stellara-big3-${sunSign.toLowerCase()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: open in new tab
+      window.open(cardUrl, '_blank');
+    }
+  };
+
   return (
     <div className="relative">
       <button
@@ -65,6 +86,18 @@ export default function ShareChart({ sunSign, moonSign, risingSign, name }: Shar
           />
           <div className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-xl border border-celestial-700/20 bg-space-800/95 shadow-lg shadow-space-900/60 backdrop-blur-xl">
             <div className="p-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  handleDownloadCard();
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-celestial-300 transition-colors hover:bg-celestial-700/15 hover:text-celestial-200 font-medium"
+              >
+                <Download className="h-4 w-4" />
+                Download Big 3 Card
+              </button>
+              <div className="my-1 h-px bg-celestial-700/15" />
               <a
                 href={twitterUrl}
                 target="_blank"

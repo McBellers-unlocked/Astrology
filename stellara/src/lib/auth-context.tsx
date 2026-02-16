@@ -22,6 +22,15 @@ export interface User {
   risingSign?: string | null;
 }
 
+interface ProfileData {
+  birthDate: string;
+  birthTime?: string;
+  birthLocation?: string;
+  sunSign?: string;
+  moonSign?: string;
+  risingSign?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -30,6 +39,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateProfile: (data: ProfileData) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -86,9 +96,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const updateProfile = async (data: ProfileData) => {
+    await api.put('/auth/profile', data);
+    // Refresh user data to pick up saved birth info
+    await refreshUser();
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isPremium, login, signup, logout, refreshUser }}
+      value={{ user, isLoading, isPremium, login, signup, logout, refreshUser, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Sparkles, Menu, X, ChevronRight, User, LogOut, Crown } from "lucide-react";
+import { Sparkles, Menu, X, ChevronRight, User, LogOut, Crown, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 interface NavItem {
@@ -140,6 +140,14 @@ export default function Header() {
                         )}
                       </div>
                       <div className="p-1.5">
+                        <Link
+                          href="/dashboard"
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          Dashboard
+                        </Link>
                         <Link
                           href="/pricing"
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-dust-300 transition-colors hover:bg-celestial-700/15 hover:text-foreground"

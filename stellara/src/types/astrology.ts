@@ -82,6 +82,7 @@ export interface BirthChartInput {
   longitude: number;
   location: string;
   timezone: string;
+  houseSystem?: HouseSystem;
 }
 
 export interface SynastryData {

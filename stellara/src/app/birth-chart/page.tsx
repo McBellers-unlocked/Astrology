@@ -26,6 +26,16 @@ import {
 import EmailCapture from '@/components/EmailCapture';
 import ShareChart from '@/components/ShareChart';
 import PremiumGate from '@/components/PremiumGate';
+import { generateBirthChart } from '@/lib/astrology/engine';
+import { ZODIAC_SIGNS as ZODIAC_SIGN_DATA, ZODIAC_ORDER } from '@/data/zodiac/signs';
+import { geocodeLocation } from '@/lib/geocoding';
+import { useAuth } from '@/lib/auth-context';
+import type {
+  BirthChartData,
+  HouseSystem as EngineHouseSystem,
+  ZodiacSign,
+  Element,
+} from '@/types/astrology';
 
 /* ================================================================
    CONSTANTS & TYPES
@@ -87,6 +97,57 @@ const HOUSE_SYSTEMS = ['Placidus', 'Koch', 'Whole Sign', 'Equal', 'Campanus'] as
 
 type HouseSystem = (typeof HOUSE_SYSTEMS)[number];
 
+/** Map UI house system names to engine's lowercase identifiers */
+const HOUSE_SYSTEM_MAP: Record<HouseSystem, EngineHouseSystem> = {
+  'Placidus': 'placidus',
+  'Koch': 'koch',
+  'Whole Sign': 'whole_sign',
+  'Equal': 'equal',
+  'Campanus': 'campanus',
+};
+
+/** Capitalize a ZodiacSign key ('aries' → 'Aries') */
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Planet key display names */
+const PLANET_DISPLAY_NAMES: Record<string, string> = {
+  sun: 'Sun', moon: 'Moon', mercury: 'Mercury', venus: 'Venus', mars: 'Mars',
+  jupiter: 'Jupiter', saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
+  pluto: 'Pluto', chiron: 'Chiron', north_node: 'North Node', south_node: 'South Node',
+};
+
+/** Aspect type display names */
+const ASPECT_DISPLAY_NAMES: Record<string, string> = {
+  conjunction: 'Conjunction', sextile: 'Sextile', square: 'Square',
+  trine: 'Trine', opposition: 'Opposition', quincunx: 'Quincunx',
+  semi_sextile: 'Semi-sextile', semi_square: 'Semi-square',
+  sesquiquadrate: 'Sesquiquadrate', quintile: 'Quintile',
+};
+
+/** Aspect nature classification */
+const ASPECT_NATURE: Record<string, 'harmonious' | 'challenging' | 'neutral'> = {
+  conjunction: 'neutral', sextile: 'harmonious', square: 'challenging',
+  trine: 'harmonious', opposition: 'challenging', quincunx: 'challenging',
+  semi_sextile: 'neutral', semi_square: 'challenging',
+  sesquiquadrate: 'challenging', quintile: 'harmonious',
+};
+
+/** Aspect interpretations for display */
+const ASPECT_INTERPRETATIONS: Record<string, string> = {
+  conjunction: 'Intensely merged energies amplifying both planetary expressions',
+  sextile: 'A natural talent and ease of expression between these energies',
+  square: 'Dynamic tension that drives growth through challenge',
+  trine: 'Effortless flow of energy creating innate gifts',
+  opposition: 'A push-pull dynamic requiring balance and awareness',
+  quincunx: 'An awkward angle requiring constant adjustment',
+  semi_sextile: 'A subtle connection requiring conscious cultivation',
+  semi_square: 'Minor friction that motivates small but important changes',
+  sesquiquadrate: 'Persistent agitation that pushes toward resolution',
+  quintile: 'A creative spark connecting talents in unexpected ways',
+};
+
 interface PlanetPosition {
   planet: string;
   sign: string;
@@ -126,234 +187,66 @@ interface ChartData {
   sunSign: string;
   moonSign: string;
   risingSign: string;
+  elementBalance: Record<Element, number>;
+  modalityBalance: Record<string, number>;
 }
 
 const TABS = ['Chart Overview', 'Planetary Positions', 'Houses', 'Aspects', 'Full Report'] as const;
 type TabName = (typeof TABS)[number];
 
 /* ================================================================
-   DETERMINISTIC MOCK DATA GENERATOR
+   BRIDGE: ENGINE → UI
+   Converts the real engine's BirthChartData into the UI's ChartData format
    ================================================================ */
 
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
-
-function generateChartData(
-  name: string,
-  birthDate: string,
-  birthTime: string,
-  birthLocation: string,
-  houseSystem: HouseSystem,
+function bridgeEngineToUI(
+  engineData: BirthChartData,
+  meta: { name: string; birthDate: string; birthTime: string; birthLocation: string; houseSystem: HouseSystem },
 ): ChartData {
-  const date = new Date(birthDate + 'T' + (birthTime || '12:00'));
-  const seed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate()
-    + date.getHours() * 60 + date.getMinutes();
-  const rng = seededRandom(seed);
+  // Convert engine planets to UI format
+  const planets: PlanetPosition[] = engineData.planets.map((p) => ({
+    planet: PLANET_DISPLAY_NAMES[p.planet] || p.planet,
+    sign: capitalize(p.sign),
+    degree: p.degree,
+    minute: p.minute,
+    house: p.house,
+    retrograde: p.retrograde,
+    absoluteDegree: p.exactDegree,
+  }));
 
-  // Sun position based on actual date (approximate real ephemeris)
-  const dayOfYear = Math.floor(
-    (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000,
-  );
-  const sunLongitude = ((dayOfYear - 80 + 365) % 365) * (360 / 365);
-  const sunSignIndex = Math.floor(sunLongitude / 30) % 12;
-  const sunDegreeInSign = sunLongitude % 30;
+  // Convert engine houses to UI format
+  const houses: HouseData[] = engineData.houses.map((h) => ({
+    house: h.house,
+    sign: capitalize(h.sign),
+    degree: h.degree,
+    minute: h.minute,
+  }));
 
-  // Moon moves ~13 degrees/day, approximate based on date + time
-  const moonOffset = (dayOfYear * 13.176 + date.getHours() * 0.549) % 360;
-  const moonSignIndex = Math.floor(moonOffset / 30) % 12;
-  const moonDegreeInSign = moonOffset % 30;
+  // Convert engine aspects to UI format
+  const aspects: AspectData[] = engineData.aspects.map((a) => ({
+    planet1: PLANET_DISPLAY_NAMES[a.planet1] || a.planet1,
+    planet2: PLANET_DISPLAY_NAMES[a.planet2] || a.planet2,
+    type: ASPECT_DISPLAY_NAMES[a.type] || a.type,
+    orb: a.orb,
+    applying: a.applying,
+    interpretation: ASPECT_INTERPRETATIONS[a.type] || 'A significant planetary relationship',
+    nature: ASPECT_NATURE[a.type] || 'neutral',
+  }));
 
-  // Ascendant based on time of day + date modifier
-  const timeMinutes = date.getHours() * 60 + date.getMinutes();
-  const ascLongitude = ((timeMinutes / 1440) * 360 + dayOfYear * 0.9856 + 180) % 360;
-  const ascSignIndex = Math.floor(ascLongitude / 30) % 12;
-  const ascDegreeInSign = ascLongitude % 30;
-
-  // Planet base longitudes — approximate orbital periods for deterministic positions
-  const planetConfigs: { name: string; period: number; baseOffset: number; canRetro: boolean; retroChance: number }[] = [
-    { name: 'Sun', period: 365.25, baseOffset: 0, canRetro: false, retroChance: 0 },
-    { name: 'Moon', period: 27.32, baseOffset: 0, canRetro: false, retroChance: 0 },
-    { name: 'Mercury', period: 87.97, baseOffset: 72, canRetro: true, retroChance: 0.19 },
-    { name: 'Venus', period: 224.7, baseOffset: 45, canRetro: true, retroChance: 0.07 },
-    { name: 'Mars', period: 686.97, baseOffset: 135, canRetro: true, retroChance: 0.09 },
-    { name: 'Jupiter', period: 4332.59, baseOffset: 200, canRetro: true, retroChance: 0.30 },
-    { name: 'Saturn', period: 10759.22, baseOffset: 280, canRetro: true, retroChance: 0.36 },
-    { name: 'Uranus', period: 30688.5, baseOffset: 320, canRetro: true, retroChance: 0.41 },
-    { name: 'Neptune', period: 60182, baseOffset: 350, canRetro: true, retroChance: 0.43 },
-    { name: 'Pluto', period: 90560, baseOffset: 240, canRetro: true, retroChance: 0.44 },
-    { name: 'Chiron', period: 18250, baseOffset: 160, canRetro: true, retroChance: 0.39 },
-    { name: 'North Node', period: 6793.5, baseOffset: 100, canRetro: false, retroChance: 0 },
-  ];
-
-  // Julian day approximation
-  const jd = dayOfYear + (date.getFullYear() - 2000) * 365.25;
-
-  const planets: PlanetPosition[] = planetConfigs.map((cfg) => {
-    let longitude: number;
-    if (cfg.name === 'Sun') {
-      longitude = sunLongitude;
-    } else if (cfg.name === 'Moon') {
-      longitude = moonOffset;
-    } else if (cfg.name === 'North Node') {
-      // North Node moves retrograde ~19.3 years cycle
-      longitude = (360 - ((jd / cfg.period) * 360) % 360 + cfg.baseOffset + 360) % 360;
-    } else {
-      longitude = ((jd / cfg.period) * 360 + cfg.baseOffset + rng() * 8 - 4 + 360) % 360;
-    }
-
-    const signIndex = Math.floor(longitude / 30) % 12;
-    const degreeInSign = longitude % 30;
-    const retrograde = cfg.canRetro && rng() < cfg.retroChance;
-
-    // Determine house placement based on longitude relative to ascendant
-    const houseOffset = (longitude - ascLongitude + 360) % 360;
-    const house = (Math.floor(houseOffset / 30) % 12) + 1;
-
-    return {
-      planet: cfg.name,
-      sign: ZODIAC_SIGNS[signIndex],
-      degree: Math.floor(degreeInSign),
-      minute: Math.floor((degreeInSign % 1) * 60),
-      house,
-      retrograde,
-      absoluteDegree: longitude,
-    };
-  });
-
-  // Override Sun, Moon with calculated values
-  planets[0] = {
-    ...planets[0],
-    sign: ZODIAC_SIGNS[sunSignIndex],
-    degree: Math.floor(sunDegreeInSign),
-    minute: Math.floor((sunDegreeInSign % 1) * 60),
-  };
-  planets[1] = {
-    ...planets[1],
-    sign: ZODIAC_SIGNS[moonSignIndex],
-    degree: Math.floor(moonDegreeInSign),
-    minute: Math.floor((moonDegreeInSign % 1) * 60),
-  };
-
-  // Houses — cusp positions based on ascendant
-  const houses: HouseData[] = Array.from({ length: 12 }, (_, i) => {
-    let cuspLong: number;
-    if (houseSystem === 'Whole Sign') {
-      cuspLong = ascSignIndex * 30 + i * 30;
-    } else if (houseSystem === 'Equal') {
-      cuspLong = ascLongitude + i * 30;
-    } else {
-      // Placidus / Koch / Campanus — simulate with slight variations
-      const baseOffset = i * 30;
-      const variation = (rng() - 0.5) * 6;
-      cuspLong = ascLongitude + baseOffset + (i > 0 ? variation : 0);
-    }
-    cuspLong = ((cuspLong % 360) + 360) % 360;
-    const signIdx = Math.floor(cuspLong / 30) % 12;
-    const deg = cuspLong % 30;
-    return {
-      house: i + 1,
-      sign: ZODIAC_SIGNS[signIdx],
-      degree: Math.floor(deg),
-      minute: Math.floor((deg % 1) * 60),
-    };
-  });
-
-  // Aspects
-  const aspectTypes: { name: string; angle: number; orb: number; nature: AspectData['nature'] }[] = [
-    { name: 'Conjunction', angle: 0, orb: 8, nature: 'neutral' },
-    { name: 'Sextile', angle: 60, orb: 5, nature: 'harmonious' },
-    { name: 'Square', angle: 90, orb: 7, nature: 'challenging' },
-    { name: 'Trine', angle: 120, orb: 7, nature: 'harmonious' },
-    { name: 'Opposition', angle: 180, orb: 8, nature: 'challenging' },
-    { name: 'Quincunx', angle: 150, orb: 3, nature: 'challenging' },
-    { name: 'Semi-sextile', angle: 30, orb: 2, nature: 'neutral' },
-  ];
-
-  const aspectInterpretations: Record<string, string[]> = {
-    Conjunction: [
-      'Intensely merged energies amplifying both planetary expressions',
-      'A powerful fusion creating a dominant theme in the personality',
-      'These forces unite, creating a concentrated area of focus',
-    ],
-    Sextile: [
-      'A natural talent and ease of expression between these energies',
-      'Opportunities flow when these planetary forces cooperate',
-      'Gentle harmony encourages creative collaboration',
-    ],
-    Square: [
-      'Dynamic tension that drives growth through challenge',
-      'Inner conflict that motivates action and transformation',
-      'Friction between these forces demands conscious integration',
-    ],
-    Trine: [
-      'Effortless flow of energy creating innate gifts',
-      'A natural harmony that supports ease and grace',
-      'These energies support each other with minimal effort',
-    ],
-    Opposition: [
-      'A push-pull dynamic requiring balance and awareness',
-      'Polarized energies seeking integration through relationship',
-      'Awareness of both sides leads to greater wholeness',
-    ],
-    Quincunx: [
-      'An awkward angle requiring constant adjustment',
-      'These energies speak different languages and need translation',
-      'Health and habits may be affected by this misalignment',
-    ],
-    'Semi-sextile': [
-      'A subtle connection requiring conscious cultivation',
-      'Adjacent signs create a gentle nudge toward integration',
-      'Minor but persistent influence on daily expression',
-    ],
-  };
-
-  const aspects: AspectData[] = [];
-  const mainPlanets = planets.slice(0, 10); // Sun through Pluto
-
-  for (let i = 0; i < mainPlanets.length; i++) {
-    for (let j = i + 1; j < mainPlanets.length; j++) {
-      const p1 = mainPlanets[i];
-      const p2 = mainPlanets[j];
-      let diff = Math.abs(p1.absoluteDegree - p2.absoluteDegree);
-      if (diff > 180) diff = 360 - diff;
-
-      for (const asp of aspectTypes) {
-        const orbValue = Math.abs(diff - asp.angle);
-        if (orbValue <= asp.orb) {
-          const interpList = aspectInterpretations[asp.name] || aspectInterpretations['Conjunction'];
-          const interpIdx = Math.floor(rng() * interpList.length);
-          aspects.push({
-            planet1: p1.planet,
-            planet2: p2.planet,
-            type: asp.name,
-            orb: Math.round(orbValue * 100) / 100,
-            applying: rng() > 0.5,
-            interpretation: interpList[interpIdx],
-            nature: asp.nature,
-          });
-          break;
-        }
-      }
-    }
-  }
+  // Extract Big Three
+  const sunPlanet = engineData.planets.find((p) => p.planet === 'sun');
+  const moonPlanet = engineData.planets.find((p) => p.planet === 'moon');
 
   return {
-    name,
-    birthDate,
-    birthTime,
-    birthLocation,
-    houseSystem,
+    ...meta,
     planets,
     houses,
     aspects,
-    sunSign: ZODIAC_SIGNS[sunSignIndex],
-    moonSign: ZODIAC_SIGNS[moonSignIndex],
-    risingSign: ZODIAC_SIGNS[ascSignIndex],
+    sunSign: sunPlanet ? capitalize(sunPlanet.sign) : 'Unknown',
+    moonSign: moonPlanet ? capitalize(moonPlanet.sign) : 'Unknown',
+    risingSign: capitalize(engineData.ascendant.sign),
+    elementBalance: engineData.elementBalance,
+    modalityBalance: engineData.modalityBalance,
   };
 }
 
@@ -361,9 +254,20 @@ function generateChartData(
    ELEMENT & MODALITY BALANCE HELPERS
    ================================================================ */
 
-function computeElementBalance(planets: PlanetPosition[]): Record<string, number> {
+function computeElementBalanceUI(chartData: ChartData): Record<string, number> {
+  // If we have engine-computed balance, use it (more accurate)
+  if (chartData.elementBalance) {
+    const total = Object.values(chartData.elementBalance).reduce((a, b) => a + b, 0) || 1;
+    return {
+      Fire: Math.round((chartData.elementBalance.fire / total) * 100),
+      Earth: Math.round((chartData.elementBalance.earth / total) * 100),
+      Air: Math.round((chartData.elementBalance.air / total) * 100),
+      Water: Math.round((chartData.elementBalance.water / total) * 100),
+    };
+  }
+  // Fallback: compute from planet signs
   const counts: Record<string, number> = { Fire: 0, Earth: 0, Air: 0, Water: 0 };
-  planets.forEach((p) => {
+  chartData.planets.forEach((p) => {
     const el = ZODIAC_ELEMENTS[p.sign];
     if (el) counts[el]++;
   });
@@ -371,9 +275,19 @@ function computeElementBalance(planets: PlanetPosition[]): Record<string, number
   return Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, Math.round((v / total) * 100)]));
 }
 
-function computeModalityBalance(planets: PlanetPosition[]): Record<string, number> {
+function computeModalityBalanceUI(chartData: ChartData): Record<string, number> {
+  // If we have engine-computed balance, use it
+  if (chartData.modalityBalance) {
+    const total = Object.values(chartData.modalityBalance).reduce((a, b) => a + b, 0) || 1;
+    return {
+      Cardinal: Math.round(((chartData.modalityBalance.cardinal ?? 0) / total) * 100),
+      Fixed: Math.round(((chartData.modalityBalance.fixed ?? 0) / total) * 100),
+      Mutable: Math.round(((chartData.modalityBalance.mutable ?? 0) / total) * 100),
+    };
+  }
+  // Fallback: compute from planet signs
   const counts: Record<string, number> = { Cardinal: 0, Fixed: 0, Mutable: 0 };
-  planets.forEach((p) => {
+  chartData.planets.forEach((p) => {
     const mod = ZODIAC_MODALITIES[p.sign];
     if (mod) counts[mod]++;
   });
@@ -672,8 +586,8 @@ function BirthChartWheel({ data }: { data: ChartData }) {
    ================================================================ */
 
 function ChartOverviewTab({ data }: { data: ChartData }) {
-  const elements = useMemo(() => computeElementBalance(data.planets), [data.planets]);
-  const modalities = useMemo(() => computeModalityBalance(data.planets), [data.planets]);
+  const elements = useMemo(() => computeElementBalanceUI(data), [data]);
+  const modalities = useMemo(() => computeModalityBalanceUI(data), [data]);
 
   const elementColors: Record<string, string> = {
     Fire: 'bg-red-500', Earth: 'bg-emerald-500', Air: 'bg-amber-400', Water: 'bg-blue-500',
@@ -963,6 +877,8 @@ function FullReportTab() {
    ================================================================ */
 
 export default function BirthChartPage() {
+  const { user, updateProfile } = useAuth();
+
   /* ----------- Form State ----------- */
   const [formData, setFormData] = useState({
     name: '',
@@ -988,19 +904,51 @@ export default function BirthChartPage() {
       e.preventDefault();
       setIsGenerating(true);
 
-      // Simulate brief processing delay for UX
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      try {
+        // Geocode the location to get lat/lng
+        const geo = await geocodeLocation(formData.birthLocation);
 
-      const data = generateChartData(
-        formData.name,
-        formData.birthDate,
-        formData.birthTime,
-        formData.birthLocation,
-        formData.houseSystem,
-      );
-      setChartData(data);
-      setActiveTab('Chart Overview');
-      setIsGenerating(false);
+        // Use the real Keplerian orbital mechanics engine
+        const engineResult = generateBirthChart({
+          birthDate: formData.birthDate,
+          birthTime: formData.birthTime || '12:00',
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+          location: geo.displayName,
+          timezone: 'UTC',
+          houseSystem: HOUSE_SYSTEM_MAP[formData.houseSystem],
+        });
+
+        // Convert engine output to UI format
+        const data = bridgeEngineToUI(engineResult, {
+          name: formData.name,
+          birthDate: formData.birthDate,
+          birthTime: formData.birthTime,
+          birthLocation: formData.birthLocation || geo.displayName,
+          houseSystem: formData.houseSystem,
+        });
+
+        setChartData(data);
+        setActiveTab('Chart Overview');
+
+        // Auto-save birth data to profile if user is logged in
+        if (user) {
+          updateProfile({
+            birthDate: formData.birthDate,
+            birthTime: formData.birthTime || undefined,
+            birthLocation: formData.birthLocation || undefined,
+            sunSign: data.sunSign.toLowerCase(),
+            moonSign: data.moonSign.toLowerCase(),
+            risingSign: data.risingSign.toLowerCase(),
+          }).catch(() => {
+            // Silent fail — chart still displayed even if save fails
+          });
+        }
+      } catch (err) {
+        console.error('Chart generation error:', err);
+      } finally {
+        setIsGenerating(false);
+      }
     },
     [formData],
   );

@@ -8,6 +8,7 @@ import emailRoutes from './routes/email.js';
 import checkoutRoutes from './routes/checkout.js';
 import webhookRoutes from './routes/webhooks.js';
 import horoscopeRoutes from './routes/horoscope.js';
+import chartRoutes from './routes/charts.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -20,7 +21,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: [FRONTEND_URL, 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
@@ -45,6 +46,7 @@ app.use('/auth', authLimiter, authRoutes);
 app.use('/email', emailRoutes);
 app.use('/checkout', checkoutRoutes);
 app.use('/horoscopes', horoscopeRoutes);
+app.use('/charts', chartRoutes);
 
 // Health check
 app.get('/', (_req, res) => {

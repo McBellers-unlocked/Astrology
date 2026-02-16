@@ -781,8 +781,9 @@ export function generateBirthChart(input: BirthChartInput): BirthChartData {
   const lng = input.longitude;
 
   // Calculate all components
+  const houseSystem = input.houseSystem ?? 'placidus';
   const planets = calculatePlanetPositions(birthDate, input.birthTime, lat, lng);
-  const houses = calculateHouses(birthDate, input.birthTime, lat, lng, 'placidus');
+  const houses = calculateHouses(birthDate, input.birthTime, lat, lng, houseSystem);
   const aspects = calculateAspects(planets);
 
   // Extract Ascendant and Midheaven
