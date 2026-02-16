@@ -81,21 +81,62 @@ Return ONLY valid JSON (no markdown, no code fences) matching this exact structu
 }`;
 }
 
+function validateHoroscope(data: unknown): data is GeneratedHoroscope {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+
+  if (typeof d.teaser !== 'string' || !d.teaser) return false;
+
+  const r = d.ratings as Record<string, unknown> | undefined;
+  if (!r || typeof r.overall !== 'number' || typeof r.love !== 'number'
+    || typeof r.career !== 'number' || typeof r.wellness !== 'number') return false;
+
+  if (!Array.isArray(d.paragraphs) || d.paragraphs.length < 4
+    || d.paragraphs.some((p: unknown) => typeof p !== 'string' || !p)) return false;
+
+  if (!Array.isArray(d.moonReading) || d.moonReading.length < 2
+    || d.moonReading.some((p: unknown) => typeof p !== 'string' || !p)) return false;
+
+  if (!Array.isArray(d.risingReading) || d.risingReading.length < 2
+    || d.risingReading.some((p: unknown) => typeof p !== 'string' || !p)) return false;
+
+  if (typeof d.luckyNumber !== 'number') return false;
+  if (typeof d.luckyColor !== 'string' || !d.luckyColor) return false;
+  if (typeof d.compatibility !== 'string' || !d.compatibility) return false;
+
+  return true;
+}
+
 async function generateForSign(
   client: Anthropic,
   sign: typeof SIGNS[number],
   dateStr: string,
 ): Promise<GeneratedHoroscope> {
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 2048,
-    messages: [{ role: 'user', content: buildPrompt(sign, dateStr) }],
-  });
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: buildPrompt(sign, dateStr) }],
+    });
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : '';
-  // Strip any accidental code fences
-  const cleaned = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
-  return JSON.parse(cleaned) as GeneratedHoroscope;
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    // Strip any accidental code fences
+    const cleaned = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
+    const parsed = JSON.parse(cleaned);
+
+    if (validateHoroscope(parsed)) {
+      return parsed;
+    }
+
+    if (attempt < maxAttempts) {
+      console.warn(`    Invalid structure for ${sign.name} (attempt ${attempt}/${maxAttempts}), retrying...`);
+      await new Promise((r) => setTimeout(r, 500));
+    } else {
+      throw new Error(`Invalid horoscope structure after ${maxAttempts} attempts`);
+    }
+  }
+  throw new Error('Unreachable');
 }
 
 const insertStmt = db.prepare(`
