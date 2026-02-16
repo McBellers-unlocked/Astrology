@@ -41,29 +41,38 @@ router.post('/signup', async (req, res) => {
 
     const token = signToken({ userId: id, email: email.toLowerCase().trim() });
 
-    // Send welcome email via Resend (non-blocking)
-    resend.emails
-      .send({
-        from: FROM_EMAIL,
-        to: email,
-        subject: 'Welcome to Stellara — your cosmic journey begins',
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
-            <h1 style="color: #7c3aed;">Welcome to Stellara, ${name}!</h1>
-            <p>Your cosmic journey begins now. Here&rsquo;s what you can do:</p>
-            <ul>
-              <li><strong>Generate your birth chart</strong> &mdash; discover your Big Three (Sun, Moon &amp; Rising)</li>
-              <li><strong>Read your daily horoscope</strong> &mdash; updated every morning</li>
-              <li><strong>Check compatibility</strong> &mdash; explore chemistry with any sign</li>
-            </ul>
-            <p style="margin-top: 24px;">
-              <a href="https://stellera.co/birth-chart" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get Your Free Birth Chart</a>
-            </p>
-            <p style="color: #666; font-size: 13px; margin-top: 32px;">Your stars, decoded. &mdash; Stellara</p>
-          </div>
-        `,
-      })
-      .catch((err) => console.error('Welcome email failed:', err));
+    // Send welcome email via Resend (non-blocking IIFE with proper error checking)
+    (async () => {
+      try {
+        const { data, error } = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: email,
+          subject: 'Welcome to Stellara — your cosmic journey begins',
+          html: `
+            <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
+              <h1 style="color: #7c3aed;">Welcome to Stellara, ${name}!</h1>
+              <p>Your cosmic journey begins now. Here&rsquo;s what you can do:</p>
+              <ul>
+                <li><strong>Generate your birth chart</strong> &mdash; discover your Big Three (Sun, Moon &amp; Rising)</li>
+                <li><strong>Read your daily horoscope</strong> &mdash; updated every morning</li>
+                <li><strong>Check compatibility</strong> &mdash; explore chemistry with any sign</li>
+              </ul>
+              <p style="margin-top: 24px;">
+                <a href="https://stellera.co/birth-chart" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get Your Free Birth Chart</a>
+              </p>
+              <p style="color: #666; font-size: 13px; margin-top: 32px;">Your stars, decoded. &mdash; Stellara</p>
+            </div>
+          `,
+        });
+        if (error) {
+          console.error('Welcome email Resend error:', JSON.stringify(error));
+        } else {
+          console.log('Welcome email sent:', data?.id);
+        }
+      } catch (err) {
+        console.error('Welcome email exception:', err);
+      }
+    })();
 
     res.status(201).json({
       token,

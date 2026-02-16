@@ -52,6 +52,17 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS email_sequence_log (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    TEXT NOT NULL REFERENCES users(id),
+    email_key  TEXT NOT NULL,
+    sent_at    TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, email_key)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_email_sequence_user
+    ON email_sequence_log(user_id);
+
   CREATE TABLE IF NOT EXISTS daily_horoscopes (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     sign            TEXT NOT NULL,
@@ -76,5 +87,12 @@ db.exec(`
     UNIQUE(sign, date)
   );
 `);
+
+// Add email_unsubscribed column if it doesn't exist yet (safe to re-run)
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`);
+} catch {
+  // Column already exists — ignore
+}
 
 export default db;
