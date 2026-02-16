@@ -5,23 +5,24 @@
  * generates witty replies using Claude, and posts them.
  *
  * Safety guards:
- * - Max 5 replies per run
+ * - Max 10 replies per run, 40/day cap
  * - Never replies to the same tweet twice (reply_log table)
  * - Never replies to the same author twice per day
  * - Skips own tweets
- * - 30-second delay between replies to avoid spam detection
+ * - 15-second delay between replies to avoid spam detection
+ * - Min 3 likes on tweet to engage
  * - Requires Twitter Basic tier ($100/mo) for search API
  *
- * Crontab entry (3x daily — morning, afternoon, evening):
- *   15 9,14,20 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
+ * Crontab entry (5x daily):
+ *   15 8,11,14,17,20 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import db from '../db.js';
 import { searchRecentTweets, replyToTweet, type SearchedTweet } from './twitter.js';
 
-const MAX_REPLIES_PER_RUN = 5;
-const REPLY_DELAY_MS = 30_000;
+const MAX_REPLIES_PER_RUN = 10;
+const REPLY_DELAY_MS = 15_000;
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -106,7 +107,7 @@ async function main() {
 
   // Check daily reply budget
   const { count: todayCount } = todayReplyCount.get() as { count: number };
-  if (todayCount >= 15) {
+  if (todayCount >= 40) {
     console.log(`  Already sent ${todayCount} replies today — daily limit reached`);
     return;
   }
@@ -139,7 +140,7 @@ async function main() {
     // Skip if we replied to this author today
     if (repliedToAuthorToday.get(t.authorUsername)) return false;
     // Require some engagement (at least 5 likes)
-    if (t.likeCount < 5) return false;
+    if (t.likeCount < 3) return false;
     return true;
   });
 
