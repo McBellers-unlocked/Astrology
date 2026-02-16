@@ -15,10 +15,9 @@ import {
 import {
   SIGNS,
   ELEMENT_COLORS,
-  HOROSCOPE_TEASERS,
-  HOROSCOPE_RATINGS,
 } from '@/lib/zodiac-data';
 import { useAuth } from '@/lib/auth-context';
+import { useDailyHubContent } from '@/hooks/use-daily-horoscope';
 import EmailCapture from '@/components/EmailCapture';
 import TodayDate from '@/components/TodayDate';
 
@@ -74,9 +73,15 @@ function RatingRow({
   );
 }
 
-function ZodiacCard({ sign }: { sign: (typeof SIGNS)[number] }) {
-  const teaser = HOROSCOPE_TEASERS[sign.slug];
-  const ratings = HOROSCOPE_RATINGS[sign.slug];
+function ZodiacCard({
+  sign,
+  teaser,
+  ratings,
+}: {
+  sign: (typeof SIGNS)[number];
+  teaser: string | null;
+  ratings: { overall: number; love: number; career: number; wellness: number } | null;
+}) {
   const elementStyle = ELEMENT_COLORS[sign.element];
 
   return (
@@ -107,16 +112,24 @@ function ZodiacCard({ sign }: { sign: (typeof SIGNS)[number] }) {
       </div>
 
       {/* Teaser */}
-      <p className="mb-4 line-clamp-3 flex-1 text-sm leading-relaxed text-dust-300">
-        {teaser}
-      </p>
+      {teaser ? (
+        <p className="mb-4 line-clamp-3 flex-1 text-sm leading-relaxed text-dust-300">
+          {teaser}
+        </p>
+      ) : (
+        <div className="mb-4 flex-1 space-y-2">
+          <div className="h-3.5 w-full animate-pulse rounded bg-white/[0.04]" />
+          <div className="h-3.5 w-[88%] animate-pulse rounded bg-white/[0.04]" />
+          <div className="h-3.5 w-[60%] animate-pulse rounded bg-white/[0.04]" />
+        </div>
+      )}
 
       {/* Ratings */}
       <div className="mb-4 space-y-1.5 border-t border-white/5 pt-3">
-        <RatingRow icon={Sparkles} label="Overall" rating={ratings.overall} />
-        <RatingRow icon={Heart} label="Love" rating={ratings.love} />
-        <RatingRow icon={Briefcase} label="Career" rating={ratings.career} />
-        <RatingRow icon={Activity} label="Wellness" rating={ratings.wellness} />
+        <RatingRow icon={Sparkles} label="Overall" rating={ratings?.overall ?? 0} />
+        <RatingRow icon={Heart} label="Love" rating={ratings?.love ?? 0} />
+        <RatingRow icon={Briefcase} label="Career" rating={ratings?.career ?? 0} />
+        <RatingRow icon={Activity} label="Wellness" rating={ratings?.wellness ?? 0} />
       </div>
 
       {/* CTA */}
@@ -134,6 +147,7 @@ function ZodiacCard({ sign }: { sign: (typeof SIGNS)[number] }) {
 export default function HoroscopeHubPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('sun');
   const { user, isPremium } = useAuth();
+  const hubContent = useDailyHubContent();
 
   return (
     <main className="relative min-h-screen">
@@ -218,7 +232,12 @@ export default function HoroscopeHubPage() {
         {/* Zodiac Grid */}
         <div className="stagger-children grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {SIGNS.map((sign) => (
-            <ZodiacCard key={sign.slug} sign={sign} />
+            <ZodiacCard
+              key={sign.slug}
+              sign={sign}
+              teaser={hubContent?.get(sign.slug)?.teaser ?? null}
+              ratings={hubContent?.get(sign.slug)?.ratings ?? null}
+            />
           ))}
         </div>
 

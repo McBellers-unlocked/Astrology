@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.js';
 import emailRoutes from './routes/email.js';
 import checkoutRoutes from './routes/checkout.js';
 import webhookRoutes from './routes/webhooks.js';
+import horoscopeRoutes from './routes/horoscope.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -43,6 +44,7 @@ const authLimiter = rateLimit({
 app.use('/auth', authLimiter, authRoutes);
 app.use('/email', emailRoutes);
 app.use('/checkout', checkoutRoutes);
+app.use('/horoscopes', horoscopeRoutes);
 
 // Health check
 app.get('/', (_req, res) => {

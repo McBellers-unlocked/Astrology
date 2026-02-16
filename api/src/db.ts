@@ -43,6 +43,30 @@ db.exec(`
     source     TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS daily_horoscopes (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    sign            TEXT NOT NULL,
+    date            TEXT NOT NULL,
+    teaser          TEXT NOT NULL,
+    overall_rating  INTEGER NOT NULL,
+    love_rating     INTEGER NOT NULL,
+    career_rating   INTEGER NOT NULL,
+    wellness_rating INTEGER NOT NULL,
+    paragraph_1     TEXT NOT NULL,
+    paragraph_2     TEXT NOT NULL,
+    paragraph_3     TEXT NOT NULL,
+    paragraph_4     TEXT NOT NULL,
+    lucky_number    INTEGER NOT NULL,
+    lucky_color     TEXT NOT NULL,
+    compatibility   TEXT NOT NULL,
+    moon_reading_1  TEXT NOT NULL,
+    moon_reading_2  TEXT NOT NULL,
+    rising_reading_1 TEXT NOT NULL,
+    rising_reading_2 TEXT NOT NULL,
+    created_at      TEXT DEFAULT (datetime('now')),
+    UNIQUE(sign, date)
+  );
 `);
 
 export default db;
