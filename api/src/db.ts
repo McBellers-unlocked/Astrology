@@ -63,6 +63,15 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_email_sequence_user
     ON email_sequence_log(user_id);
 
+  CREATE TABLE IF NOT EXISTS reply_log (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    original_tweet_id TEXT UNIQUE NOT NULL,
+    author_username   TEXT NOT NULL,
+    reply_tweet_id    TEXT,
+    reply_text        TEXT NOT NULL,
+    created_at        TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS daily_horoscopes (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     sign            TEXT NOT NULL,

@@ -17,11 +17,23 @@ const ACCESS_TOKEN = process.env.TWITTER_ACCESS_TOKEN ?? '';
 const ACCESS_SECRET = process.env.TWITTER_ACCESS_SECRET ?? '';
 
 const TWEET_URL = 'https://api.twitter.com/2/tweets';
+const SEARCH_URL = 'https://api.twitter.com/2/tweets/search/recent';
 const MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json';
 
 interface TweetResult {
   id: string;
   text: string;
+}
+
+export interface SearchedTweet {
+  id: string;
+  text: string;
+  authorId: string;
+  authorUsername: string;
+  authorName: string;
+  likeCount: number;
+  retweetCount: number;
+  createdAt: string;
 }
 
 /** Build OAuth 1.0a Authorization header */
@@ -132,6 +144,108 @@ export async function postToTwitter(text: string, mediaId?: string): Promise<Twe
   if (!res.ok) {
     const error = await res.text();
     throw new Error(`Twitter API error (${res.status}): ${error}`);
+  }
+
+  const data = (await res.json()) as { data: TweetResult };
+  return data.data;
+}
+
+/** Search recent tweets. Requires Twitter API Basic tier ($100/mo). */
+export async function searchRecentTweets(query: string, maxResults = 10): Promise<SearchedTweet[]> {
+  if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_SECRET) {
+    throw new Error('Twitter API credentials not configured');
+  }
+
+  const params: Record<string, string> = {
+    query,
+    max_results: String(Math.min(Math.max(maxResults, 10), 100)),
+    'tweet.fields': 'created_at,public_metrics',
+    expansions: 'author_id',
+    'user.fields': 'username,name,public_metrics',
+  };
+
+  const queryString = Object.entries(params)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+
+  const url = `${SEARCH_URL}?${queryString}`;
+
+  // For GET requests, include query params in the OAuth signature
+  const authHeader = buildOAuthHeader('GET', SEARCH_URL, params);
+
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: authHeader },
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Twitter search error (${res.status}): ${error}`);
+  }
+
+  const json = (await res.json()) as {
+    data?: Array<{
+      id: string;
+      text: string;
+      author_id: string;
+      created_at: string;
+      public_metrics: { like_count: number; retweet_count: number };
+    }>;
+    includes?: {
+      users?: Array<{ id: string; username: string; name: string; public_metrics?: { followers_count: number } }>;
+    };
+  };
+
+  if (!json.data) return [];
+
+  const usersMap = new Map<string, { username: string; name: string }>();
+  for (const u of json.includes?.users ?? []) {
+    usersMap.set(u.id, { username: u.username, name: u.name });
+  }
+
+  return json.data.map((t) => {
+    const author = usersMap.get(t.author_id) ?? { username: 'unknown', name: 'Unknown' };
+    return {
+      id: t.id,
+      text: t.text,
+      authorId: t.author_id,
+      authorUsername: author.username,
+      authorName: author.name,
+      likeCount: t.public_metrics.like_count,
+      retweetCount: t.public_metrics.retweet_count,
+      createdAt: t.created_at,
+    };
+  });
+}
+
+/** Reply to a specific tweet */
+export async function replyToTweet(text: string, inReplyToTweetId: string): Promise<TweetResult> {
+  if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_SECRET) {
+    throw new Error('Twitter API credentials not configured');
+  }
+
+  const trimmedText = text.length > 280 ? text.slice(0, 277) + '...' : text;
+
+  const tweetBody = {
+    text: trimmedText,
+    reply: { in_reply_to_tweet_id: inReplyToTweetId },
+  };
+
+  const body = JSON.stringify(tweetBody);
+  const authHeader = buildOAuthHeader('POST', TWEET_URL);
+
+  const res = await fetch(TWEET_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/json',
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Twitter reply error (${res.status}): ${error}`);
   }
 
   const data = (await res.json()) as { data: TweetResult };
