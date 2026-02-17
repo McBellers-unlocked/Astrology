@@ -102,5 +102,6 @@ try { db.exec(`ALTER TABLE users ADD COLUMN email_unsubscribed INTEGER DEFAULT 0
 try { db.exec(`ALTER TABLE users ADD COLUMN utm_source TEXT`); } catch { /* exists */ }
 try { db.exec(`ALTER TABLE users ADD COLUMN utm_medium TEXT`); } catch { /* exists */ }
 try { db.exec(`ALTER TABLE users ADD COLUMN utm_campaign TEXT`); } catch { /* exists */ }
+try { db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`); } catch { /* exists */ }
 
 export default db;

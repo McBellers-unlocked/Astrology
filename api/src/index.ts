@@ -10,6 +10,7 @@ import checkoutRoutes from './routes/checkout.js';
 import webhookRoutes from './routes/webhooks.js';
 import horoscopeRoutes from './routes/horoscope.js';
 import chartRoutes from './routes/charts.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -71,6 +72,7 @@ app.use('/email', emailLimiter, emailRoutes);
 app.use('/checkout', checkoutRoutes);
 app.use('/horoscopes', horoscopeRoutes);
 app.use('/charts', chartRoutes);
+app.use('/admin', adminRoutes);
 
 // Serve temporary social images for Instagram API (it fetches images by URL)
 app.use('/social-images', express.static(join(process.cwd(), 'public', 'social-images')));
