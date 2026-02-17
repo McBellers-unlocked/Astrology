@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { join } from 'path';
 
 import authRoutes from './routes/auth.js';
 import emailRoutes from './routes/email.js';
@@ -70,6 +71,9 @@ app.use('/email', emailLimiter, emailRoutes);
 app.use('/checkout', checkoutRoutes);
 app.use('/horoscopes', horoscopeRoutes);
 app.use('/charts', chartRoutes);
+
+// Serve temporary social images for Instagram API (it fetches images by URL)
+app.use('/social-images', express.static(join(process.cwd(), 'public', 'social-images')));
 
 // Health check
 app.get('/', (_req, res) => {

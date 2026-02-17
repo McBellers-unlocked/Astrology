@@ -9,6 +9,8 @@
 
 import { SIGNS, HOROSCOPE_TEASERS, HOROSCOPE_RATINGS, getFullHoroscope } from './content.js';
 import { postToTwitter, postThread, uploadMedia } from './twitter.js';
+import { postToFacebook, threadToFacebookPost } from './facebook.js';
+import { postToInstagram, buildInstagramCaption, threadToInstagramCaption } from './instagram.js';
 import { PostResult, sendFailureAlert, appendResults } from './notify.js';
 import { generateHoroscopeCard, generateEngagementCard } from './image.js';
 
@@ -404,19 +406,26 @@ async function main() {
 
   const results: PostResult[] = [];
 
+  const hasFB = !!(process.env.FACEBOOK_PAGE_ID && process.env.FACEBOOK_PAGE_TOKEN);
+  const hasIG = !!(process.env.INSTAGRAM_ACCOUNT_ID && process.env.FACEBOOK_PAGE_TOKEN);
+
   for (const post of duePosts) {
     console.log(`  ${post.scheduledFor} | ${post.type} ${post.sign ?? ''}`);
 
+    // Generate image once — reuse across all platforms
+    const imageBuffer = post.type === 'thread'
+      ? await generateEngagementCard()
+      : post.type === 'horoscope' && post.sign
+        ? await generateHoroscopeCard(post.sign)
+        : await generateEngagementCard();
+
+    // --- Twitter ---
     if (process.env.TWITTER_API_KEY) {
       try {
+        const mediaId = await uploadMedia(imageBuffer);
         if (post.type === 'thread' && post.threadTweets) {
-          // Post as a thread — attach image to first tweet only
-          const imageBuffer = await generateEngagementCard();
-          const mediaId = await uploadMedia(imageBuffer);
-          console.log(`  Image uploaded for thread: ${mediaId}`);
-
           const threadResults = await postThread(post.threadTweets, mediaId);
-          console.log(`  Thread posted (${threadResults.length} tweets), first: ${threadResults[0].id}`);
+          console.log(`  [twitter] Thread posted (${threadResults.length} tweets): ${threadResults[0].id}`);
           results.push({
             timestamp: new Date().toISOString(),
             scheduledFor: post.scheduledFor,
@@ -426,15 +435,8 @@ async function main() {
             tweetId: threadResults[0].id,
           });
         } else {
-          // Single tweet with image
-          const imageBuffer = post.type === 'horoscope' && post.sign
-            ? await generateHoroscopeCard(post.sign)
-            : await generateEngagementCard();
-          const mediaId = await uploadMedia(imageBuffer);
-          console.log(`  Image uploaded: ${mediaId}`);
-
           const result = await postToTwitter(post.text, mediaId);
-          console.log(`  Posted to Twitter: ${result.id}`);
+          console.log(`  [twitter] Posted: ${result.id}`);
           results.push({
             timestamp: new Date().toISOString(),
             scheduledFor: post.scheduledFor,
@@ -446,20 +448,48 @@ async function main() {
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        console.error(`  Failed:`, err);
+        console.error(`  [twitter] Failed:`, errorMsg);
         const failResult: PostResult = {
           timestamp: new Date().toISOString(),
           scheduledFor: post.scheduledFor,
           type: post.type,
           sign: post.sign,
           success: false,
-          error: errorMsg,
+          error: `Twitter: ${errorMsg}`,
         };
         results.push(failResult);
         await sendFailureAlert(failResult);
       }
     } else {
-      console.log(`  [dry] ${post.text.slice(0, 80)}...`);
+      console.log(`  [twitter][dry] ${post.text.slice(0, 80)}...`);
+    }
+
+    // --- Facebook ---
+    if (hasFB) {
+      try {
+        const fbText = post.type === 'thread' && post.threadTweets
+          ? threadToFacebookPost(post.threadTweets)
+          : post.text;
+        const fbResult = await postToFacebook(fbText, imageBuffer);
+        console.log(`  [facebook] Posted: ${fbResult.id}`);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error(`  [facebook] Failed:`, errorMsg);
+      }
+    }
+
+    // --- Instagram ---
+    if (hasIG) {
+      try {
+        const igCaption = post.type === 'thread' && post.threadTweets
+          ? threadToInstagramCaption(post.threadTweets, post.sign)
+          : buildInstagramCaption(post.text, post.sign);
+        const igResult = await postToInstagram(igCaption, imageBuffer);
+        console.log(`  [instagram] Posted: ${igResult.id}`);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error(`  [instagram] Failed:`, errorMsg);
+      }
     }
 
     // Space out posts by 10 seconds to avoid rate limits
