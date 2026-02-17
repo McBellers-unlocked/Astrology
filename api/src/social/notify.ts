@@ -16,7 +16,7 @@ const RESULTS_FILE = join(homedir(), 'social-posts-results.jsonl');
 export interface PostResult {
   timestamp: string;
   scheduledFor: string;
-  type: 'horoscope' | 'engagement';
+  type: 'horoscope' | 'engagement' | 'thread';
   sign?: string;
   success: boolean;
   tweetId?: string;
@@ -26,7 +26,9 @@ export interface PostResult {
 export async function sendFailureAlert(result: PostResult): Promise<void> {
   const label = result.type === 'horoscope'
     ? `${result.sign?.toUpperCase()} horoscope`
-    : 'Engagement post';
+    : result.type === 'thread'
+      ? 'Thread'
+      : 'Engagement post';
 
   try {
     await resend.emails.send({

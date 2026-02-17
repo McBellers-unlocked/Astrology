@@ -252,3 +252,93 @@ export async function replyToTweet(text: string, inReplyToTweetId: string): Prom
   const data = (await res.json()) as { data: TweetResult };
   return data.data;
 }
+
+/** Quote-tweet another tweet (shows the original embedded beneath your comment) */
+export async function quoteTweet(text: string, quotedTweetId: string): Promise<TweetResult> {
+  if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_SECRET) {
+    throw new Error('Twitter API credentials not configured');
+  }
+
+  const trimmedText = text.length > 280 ? text.slice(0, 277) + '...' : text;
+
+  const tweetBody = {
+    text: trimmedText,
+    quote_tweet_id: quotedTweetId,
+  };
+
+  const body = JSON.stringify(tweetBody);
+  const authHeader = buildOAuthHeader('POST', TWEET_URL);
+
+  const res = await fetch(TWEET_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/json',
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    console.error(`Twitter quote tweet failed — status: ${res.status}, quoted_id: ${quotedTweetId}, response: ${error}`);
+    throw new Error(`Twitter quote tweet error (${res.status}): ${error}`);
+  }
+
+  const data = (await res.json()) as { data: TweetResult };
+  return data.data;
+}
+
+/** Post a thread (array of tweets, each replying to the previous) */
+export async function postThread(tweets: string[], mediaId?: string): Promise<TweetResult[]> {
+  if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_SECRET) {
+    throw new Error('Twitter API credentials not configured');
+  }
+
+  const results: TweetResult[] = [];
+  let previousTweetId: string | undefined;
+
+  for (let i = 0; i < tweets.length; i++) {
+    const text = tweets[i].length > 280 ? tweets[i].slice(0, 277) + '...' : tweets[i];
+
+    const tweetBody: Record<string, unknown> = { text };
+
+    // First tweet can have an image
+    if (i === 0 && mediaId) {
+      tweetBody.media = { media_ids: [mediaId] };
+    }
+
+    // All tweets after the first reply to the previous one
+    if (previousTweetId) {
+      tweetBody.reply = { in_reply_to_tweet_id: previousTweetId };
+    }
+
+    const body = JSON.stringify(tweetBody);
+    const authHeader = buildOAuthHeader('POST', TWEET_URL);
+
+    const res = await fetch(TWEET_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+
+    if (!res.ok) {
+      const error = await res.text();
+      console.error(`Twitter thread tweet ${i + 1}/${tweets.length} failed — status: ${res.status}, response: ${error}`);
+      throw new Error(`Twitter thread error on tweet ${i + 1} (${res.status}): ${error}`);
+    }
+
+    const data = (await res.json()) as { data: TweetResult };
+    results.push(data.data);
+    previousTweetId = data.data.id;
+
+    // Small delay between thread tweets to avoid rate limits
+    if (i < tweets.length - 1) {
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+
+  return results;
+}

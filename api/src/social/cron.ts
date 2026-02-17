@@ -8,7 +8,7 @@
 //   */30 7-22 * * * cd ~/Astrology/api && npx tsx src/social/cron.ts >> ~/social-posts.log 2>&1
 
 import { SIGNS, HOROSCOPE_TEASERS, HOROSCOPE_RATINGS, getFullHoroscope } from './content.js';
-import { postToTwitter, uploadMedia } from './twitter.js';
+import { postToTwitter, postThread, uploadMedia } from './twitter.js';
 import { PostResult, sendFailureAlert, appendResults } from './notify.js';
 import { generateHoroscopeCard, generateEngagementCard } from './image.js';
 
@@ -242,11 +242,76 @@ const ENGAGEMENT_POSTS: string[][] = [
   ],
 ];
 
+// Thread content — educational multi-tweet threads that get 10-50x more impressions
+const THREAD_TEMPLATES: string[][][] = [
+  // Thread 1: "Your Big Three explained"
+  [
+    [
+      "Your Big Three in astrology is the key to understanding yourself.\n\nMost people only know their Sun sign. That's like reading the title of a book and calling it done.\n\nHere's what your Big Three actually means (thread)",
+      "Your SUN SIGN is your core identity — the conscious you.\n\nIt's who you are at your centre, your ego, your life force. When someone asks \"what's your sign?\" this is what they mean.\n\nBut it's only 1/3 of the picture.",
+      "Your MOON SIGN is your emotional blueprint.\n\nIt rules your inner world — how you process feelings, what you need to feel safe, and how you love behind closed doors.\n\nThis is the sign your therapist would relate to most.",
+      "Your RISING SIGN (Ascendant) is your social mask.\n\nIt's the first impression you give, how you walk into a room, and the energy people feel before they know you.\n\nIt changes every 2 hours — born 20 min later and you'd be a different person.",
+      "Put them together and you get a 3D picture of who you are:\n\nSun = what drives you\nMoon = what you need\nRising = how you show up\n\nDiscover your Big Three free: stellera.co/birth-chart",
+    ],
+  ],
+  // Thread 2: "Signs as..." ranking thread
+  [
+    [
+      "Ranking every zodiac sign's emotional intelligence from highest to lowest.\n\nThis is going to make some of you mad. Let's go (thread)",
+      "12. Sagittarius — genuinely doesn't notice you're upset until you're crying in the car\n\n11. Aries — notices, but their solution is \"just don't think about it\"\n\n10. Aquarius — intellectually understands emotions, emotionally does not",
+      "9. Gemini — reads the room perfectly but processes it as gossip not empathy\n\n8. Leo — deeply empathetic but only when it's about them\n\n7. Capricorn — secretly very emotional, publicly a brick wall",
+      "6. Libra — excellent at making YOU feel heard, terrible at feeling their own stuff\n\n5. Virgo — shows love through fixing your problems (even when you didn't ask)\n\n4. Taurus — steady, loyal emotional support but will NOT talk about it",
+      "3. Scorpio — reads your soul before you speak, feels EVERYTHING intensely\n\n2. Cancer — the emotional backbone of every friend group, absorbs your pain like a sponge\n\n1. Pisces — literally feels what you feel before you feel it\n\nAccurate? Fight me in the comments",
+    ],
+  ],
+  // Thread 3: "Houses explained"
+  [
+    [
+      "Your birth chart has 12 HOUSES and each one rules a different part of your life.\n\nMost people have no idea this exists. Here's the cheat sheet (thread)",
+      "Houses 1-4 (Personal foundations):\n\n1st — Self, identity, first impressions\n2nd — Money, possessions, self-worth\n3rd — Communication, siblings, daily routine\n4th — Home, family, emotional roots",
+      "Houses 5-8 (Relationships & power):\n\n5th — Romance, creativity, fun, children\n6th — Health, work, daily habits\n7th — Partnerships, marriage, contracts\n8th — Transformation, intimacy, shared finances (the spicy house)",
+      "Houses 9-12 (Higher purpose):\n\n9th — Travel, philosophy, higher education\n10th — Career, public image, legacy\n11th — Community, hopes, friendships\n12th — Subconscious, secrets, spirituality (the hidden house)",
+      "The SIGN on each house cusp + any PLANETS inside it shape how that area plays out in YOUR life.\n\nTwo Scorpios can have completely different careers because of their 10th house placement.\n\nSee your full house chart: stellera.co/birth-chart",
+    ],
+  ],
+  // Thread 4: "Why you keep dating the same sign"
+  [
+    [
+      "You keep dating the same type of person and it's not a coincidence.\n\nYour birth chart literally explains the pattern. Here's how (thread)",
+      "Your 7th HOUSE rules partnerships and attraction.\n\nThe sign on your 7th house cusp is the energy you're naturally drawn to in relationships — even if it's your \"worst match\" on paper.",
+      "Your VENUS sign reveals how you love and what you value in a partner.\n\nVenus in Aries? You want passion and independence.\nVenus in Cancer? You want safety and emotional depth.\nVenus in Aquarius? You want space and intellectual connection.",
+      "Your MARS sign reveals what turns you on and how you pursue what you want.\n\nCombine your Venus + Mars + 7th house and you've basically got a roadmap of your love life (for better or worse).",
+      "This is why two Leos can have completely different relationship patterns.\n\nYour Sun sign is just the headline. Your chart tells the full love story.\n\nDiscover your Venus, Mars & 7th house: stellera.co/birth-chart",
+    ],
+  ],
+  // Thread 5: "Moon signs and how you handle stress"
+  [
+    [
+      "Your Moon sign reveals exactly how you cope with stress.\n\nThis is the stuff people close to you see but strangers don't (thread)",
+      "Fire Moons (Aries, Leo, Sag):\n\nYou blow up fast, burn through it, and move on. You process emotions through action — working out, ranting, doing something dramatic. You don't hold grudges, you hold the mic.",
+      "Earth Moons (Taurus, Virgo, Capricorn):\n\nYou go quiet. You clean, organise, plan, work. Emotions get filed under \"deal with later.\" You need physical comfort — good food, nature, your own space. Crying happens alone, if at all.",
+      "Air Moons (Gemini, Libra, Aquarius):\n\nYou talk it out (or overthink it into oblivion). You rationalise feelings instead of feeling them. Detachment is your superpower and your biggest blind spot.",
+      "Water Moons (Cancer, Scorpio, Pisces):\n\nYou ABSORB everything. Other people's stress becomes your stress. You need alone time to decompress or you'll explode. The most emotionally intuitive — and the most easily overwhelmed.\n\nFind your Moon sign: stellera.co/birth-chart",
+    ],
+  ],
+  // Thread 6: "Mercury retrograde survival guide"
+  [
+    [
+      "Mercury retrograde is NOT out to ruin your life.\n\nBut it IS affecting you differently based on your sign. Here's your actual survival guide (thread)",
+      "What Mercury retrograde ACTUALLY does:\n\n- Slows communication (texts go wrong, emails get lost)\n- Revisits the past (exes resurface, old issues return)\n- Forces you to review, not start\n\nIt's not chaos — it's a cosmic audit.",
+      "Fire signs (Aries, Leo, Sag):\nYou'll feel impatient. Things won't move fast enough. DON'T make impulsive decisions. Channel the frustration into revisiting old projects.\n\nEarth signs (Taurus, Virgo, Cap):\nYour plans will get disrupted. Let them. Flexibility is the lesson.",
+      "Air signs (Gemini, Libra, Aquarius):\nCommunication is YOUR domain and it's glitching. Double-check every text, email, and contract. Re-read before you send.\n\nWater signs (Cancer, Scorpio, Pisces):\nEmotions from the past hit harder. Let them surface — this is healing, not regression.",
+      "The #1 rule: Mercury retrograde is for RE- words.\n\nReview. Reflect. Revisit. Reconnect. Redo.\n\nDon't launch anything new. Polish what exists.\n\nYour full retrograde forecast: stellera.co/horoscope",
+    ],
+  ],
+];
+
 interface ScheduledPost {
   text: string;
-  type: 'horoscope' | 'engagement';
+  type: 'horoscope' | 'engagement' | 'thread';
   scheduledFor: string;
   sign?: string;
+  threadTweets?: string[];
 }
 
 function generateAllPosts(): ScheduledPost[] {
@@ -296,6 +361,21 @@ function generateAllPosts(): ScheduledPost[] {
     });
   });
 
+  // 2 threads per day at 12:00 and 18:00 (high-engagement times)
+  const threadTimes = ['12:00', '18:00'];
+  threadTimes.forEach((time, i) => {
+    const templateIndex = (seed + i) % THREAD_TEMPLATES.length;
+    const variantIndex = (seed + i) % THREAD_TEMPLATES[templateIndex].length;
+    const threadTweets = THREAD_TEMPLATES[templateIndex][variantIndex];
+
+    posts.push({
+      text: threadTweets[0],
+      type: 'thread',
+      scheduledFor: time,
+      threadTweets,
+    });
+  });
+
   return posts;
 }
 
@@ -329,26 +409,44 @@ async function main() {
 
     if (process.env.TWITTER_API_KEY) {
       try {
-        // Generate and upload image
-        const imageBuffer = post.type === 'horoscope' && post.sign
-          ? await generateHoroscopeCard(post.sign)
-          : await generateEngagementCard();
-        const mediaId = await uploadMedia(imageBuffer);
-        console.log(`  📷 Image uploaded: ${mediaId}`);
+        if (post.type === 'thread' && post.threadTweets) {
+          // Post as a thread — attach image to first tweet only
+          const imageBuffer = await generateEngagementCard();
+          const mediaId = await uploadMedia(imageBuffer);
+          console.log(`  Image uploaded for thread: ${mediaId}`);
 
-        const result = await postToTwitter(post.text, mediaId);
-        console.log(`  ✓ Posted to Twitter: ${result.id}`);
-        results.push({
-          timestamp: new Date().toISOString(),
-          scheduledFor: post.scheduledFor,
-          type: post.type,
-          sign: post.sign,
-          success: true,
-          tweetId: result.id,
-        });
+          const threadResults = await postThread(post.threadTweets, mediaId);
+          console.log(`  Thread posted (${threadResults.length} tweets), first: ${threadResults[0].id}`);
+          results.push({
+            timestamp: new Date().toISOString(),
+            scheduledFor: post.scheduledFor,
+            type: post.type,
+            sign: post.sign,
+            success: true,
+            tweetId: threadResults[0].id,
+          });
+        } else {
+          // Single tweet with image
+          const imageBuffer = post.type === 'horoscope' && post.sign
+            ? await generateHoroscopeCard(post.sign)
+            : await generateEngagementCard();
+          const mediaId = await uploadMedia(imageBuffer);
+          console.log(`  Image uploaded: ${mediaId}`);
+
+          const result = await postToTwitter(post.text, mediaId);
+          console.log(`  Posted to Twitter: ${result.id}`);
+          results.push({
+            timestamp: new Date().toISOString(),
+            scheduledFor: post.scheduledFor,
+            type: post.type,
+            sign: post.sign,
+            success: true,
+            tweetId: result.id,
+          });
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        console.error(`  ✗ Failed:`, err);
+        console.error(`  Failed:`, err);
         const failResult: PostResult = {
           timestamp: new Date().toISOString(),
           scheduledFor: post.scheduledFor,

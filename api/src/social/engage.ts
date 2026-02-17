@@ -19,10 +19,12 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import db from '../db.js';
-import { searchRecentTweets, replyToTweet, type SearchedTweet } from './twitter.js';
+import { searchRecentTweets, replyToTweet, quoteTweet, type SearchedTweet } from './twitter.js';
 
 const MAX_REPLIES_PER_RUN = 10;
+const QUOTE_TWEETS_PER_RUN = 2;   // Top-engagement tweets get QT'd (visible on our timeline)
 const REPLY_DELAY_MS = 15_000;
+const MIN_LIKES_FOR_QT = 10;      // Only QT tweets with decent engagement
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -166,18 +168,56 @@ async function main() {
 
   // Sort by engagement (likes + retweets), pick the top ones
   candidates.sort((a, b) => (b.likeCount + b.retweetCount) - (a.likeCount + a.retweetCount));
-  const toReply = candidates.slice(0, MAX_REPLIES_PER_RUN);
 
-  console.log(`  ${candidates.length} eligible, replying to ${toReply.length}`);
+  // Split: top high-engagement tweets get quote-tweeted (visible on our timeline),
+  // rest get regular replies (hidden in threads)
+  const qtCandidates = candidates.filter((t) => t.likeCount >= MIN_LIKES_FOR_QT).slice(0, QUOTE_TWEETS_PER_RUN);
+  const qtIds = new Set(qtCandidates.map((t) => t.id));
+  const replyCandidates = candidates.filter((t) => !qtIds.has(t.id)).slice(0, MAX_REPLIES_PER_RUN);
+
+  console.log(`  ${candidates.length} eligible — ${qtCandidates.length} quote tweets, ${replyCandidates.length} replies`);
 
   let sent = 0;
+  let quoted = 0;
   let errors = 0;
 
-  for (const tweet of toReply) {
+  // ---- Quote tweets first (these show on OUR timeline = visibility) ----
+  for (const tweet of qtCandidates) {
+    console.log(`  [QT] @${tweet.authorUsername} (${tweet.likeCount} likes): "${tweet.text.slice(0, 60)}..."`);
+
+    try {
+      const replyText = await generateReply(tweet);
+      if (!replyText) {
+        console.log('    [skip] No reply generated');
+        continue;
+      }
+
+      console.log(`    QT text: "${replyText}"`);
+
+      if (process.env.TWITTER_API_KEY) {
+        const result = await quoteTweet(replyText, tweet.id);
+        console.log(`    [QT SENT] Quote tweet posted: ${result.id}`);
+        insertReply.run(tweet.id, tweet.authorUsername, result.id, `[QT] ${replyText}`);
+        quoted++;
+      } else {
+        console.log(`    [dry] Would QT: "${replyText}"`);
+        insertReply.run(tweet.id, tweet.authorUsername, null, `[QT] ${replyText}`);
+        quoted++;
+      }
+    } catch (err) {
+      console.error(`    [ERROR]`, err instanceof Error ? err.message : err);
+      errors++;
+    }
+
+    console.log(`    Waiting ${REPLY_DELAY_MS / 1000}s...`);
+    await new Promise((r) => setTimeout(r, REPLY_DELAY_MS));
+  }
+
+  // ---- Regular replies ----
+  for (const tweet of replyCandidates) {
     console.log(`  @${tweet.authorUsername} (${tweet.likeCount} likes): "${tweet.text.slice(0, 60)}..."`);
 
     try {
-      // Generate reply with Claude
       const replyText = await generateReply(tweet);
       if (!replyText) {
         console.log('    [skip] No reply generated');
@@ -207,13 +247,13 @@ async function main() {
     }
 
     // Wait between replies to avoid spam detection
-    if (toReply.indexOf(tweet) < toReply.length - 1) {
+    if (replyCandidates.indexOf(tweet) < replyCandidates.length - 1) {
       console.log(`    Waiting ${REPLY_DELAY_MS / 1000}s...`);
       await new Promise((r) => setTimeout(r, REPLY_DELAY_MS));
     }
   }
 
-  console.log(`[${now.toISOString()}] Done. Sent: ${sent}, Errors: ${errors}, Today total: ${todayCount + sent}`);
+  console.log(`[${now.toISOString()}] Done. Replies: ${sent}, QTs: ${quoted}, Errors: ${errors}, Today total: ${todayCount + sent + quoted}`);
 }
 
 main().catch((err) => {
