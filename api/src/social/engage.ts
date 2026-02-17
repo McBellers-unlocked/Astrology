@@ -166,9 +166,13 @@ async function main() {
 
       console.log(`    Reply: "${replyText}"`);
 
-      // Post the reply
+      // Post the reply — prepend @username so Twitter threads it correctly
       if (process.env.TWITTER_API_KEY) {
-        const result = await replyToTweet(replyText, tweet.id);
+        const mentionPrefix = `@${tweet.authorUsername} `;
+        const fullReply = replyText.startsWith(`@${tweet.authorUsername}`)
+          ? replyText
+          : mentionPrefix + replyText;
+        const result = await replyToTweet(fullReply, tweet.id);
         console.log(`    [SENT] Reply posted: ${result.id}`);
         insertReply.run(tweet.id, tweet.authorUsername, result.id, replyText);
         sent++;

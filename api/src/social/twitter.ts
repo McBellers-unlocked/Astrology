@@ -245,6 +245,7 @@ export async function replyToTweet(text: string, inReplyToTweetId: string): Prom
 
   if (!res.ok) {
     const error = await res.text();
+    console.error(`Twitter reply failed — status: ${res.status}, tweet_id: ${inReplyToTweetId}, response: ${error}`);
     throw new Error(`Twitter reply error (${res.status}): ${error}`);
   }
 
