@@ -10,7 +10,7 @@
  * - Never replies to the same author twice per day
  * - Skips own tweets
  * - 15-second delay between replies to avoid spam detection
- * - Min 3 likes on tweet to engage
+ * - Min 1 like on tweet to engage (catch fresh tweets early)
  * - Requires Twitter Basic tier ($100/mo) for search API
  *
  * Crontab entry (5x daily):
@@ -26,11 +26,20 @@ const REPLY_DELAY_MS = 15_000;
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-// Search queries to find astrology tweets worth engaging with
+// Search queries — broad pool, 2 queried per run (rotated)
 const SEARCH_QUERIES = [
-  '"zodiac sign" OR "birth chart" OR "horoscope" -is:retweet -is:reply lang:en',
-  '"mercury retrograde" OR "saturn return" OR "moon sign" -is:retweet -is:reply lang:en',
-  '"sun sign" OR "rising sign" OR "venus sign" -is:retweet -is:reply lang:en',
+  '"birth chart" OR "natal chart" -is:retweet -is:reply lang:en',
+  '"mercury retrograde" OR "saturn return" -is:retweet -is:reply lang:en',
+  '"sun sign" OR "rising sign" OR "moon sign" -is:retweet -is:reply lang:en',
+  '"venus sign" OR "mars sign" OR "venus in" -is:retweet -is:reply lang:en',
+  'horoscope today -is:retweet -is:reply lang:en',
+  '"zodiac sign" OR "zodiac compatibility" -is:retweet -is:reply lang:en',
+  '"pisces season" OR "aries season" OR "aquarius season" -is:retweet -is:reply lang:en',
+  '"big three" astrology -is:retweet -is:reply lang:en',
+  '"solar eclipse" OR "lunar eclipse" astrology -is:retweet -is:reply lang:en',
+  '"co-star" OR "costar app" OR "the pattern" astrology -is:retweet -is:reply lang:en',
+  '"12th house" OR "8th house" OR "7th house" -is:retweet -is:reply lang:en',
+  '"scorpio" OR "sagittarius" OR "capricorn" horoscope -is:retweet -is:reply lang:en',
 ];
 
 // ---- Prepared statements ----
@@ -115,21 +124,32 @@ async function main() {
   // Get our own Twitter user ID to avoid replying to ourselves
   const ownUsername = (process.env.TWITTER_USERNAME ?? 'stelleraapp').toLowerCase();
 
-  // Rotate which search query we use based on time of day
-  const queryIndex = now.getHours() % SEARCH_QUERIES.length;
-  const query = SEARCH_QUERIES[queryIndex];
-  console.log(`  Search query: ${query.slice(0, 60)}...`);
+  // Run 2 different queries per session for a wider candidate pool
+  const QUERIES_PER_RUN = 2;
+  const baseIndex = (now.getHours() * 2 + Math.floor(now.getMinutes() / 30)) % SEARCH_QUERIES.length;
 
-  let tweets: SearchedTweet[];
-  try {
-    tweets = await searchRecentTweets(query, 20);
-  } catch (err) {
-    console.error('  Search failed:', err instanceof Error ? err.message : err);
-    console.error('  Note: Search API requires Twitter Basic tier ($100/mo)');
-    return;
+  const tweets: SearchedTweet[] = [];
+  const seenIds = new Set<string>();
+
+  for (let i = 0; i < QUERIES_PER_RUN; i++) {
+    const queryIndex = (baseIndex + i) % SEARCH_QUERIES.length;
+    const query = SEARCH_QUERIES[queryIndex];
+    console.log(`  Search ${i + 1}: ${query.slice(0, 60)}...`);
+
+    try {
+      const results = await searchRecentTweets(query, 20);
+      for (const t of results) {
+        if (!seenIds.has(t.id)) {
+          seenIds.add(t.id);
+          tweets.push(t);
+        }
+      }
+    } catch (err) {
+      console.error('  Search failed:', err instanceof Error ? err.message : err);
+    }
   }
 
-  console.log(`  Found ${tweets.length} tweets`);
+  console.log(`  Found ${tweets.length} unique tweets across ${QUERIES_PER_RUN} queries`);
 
   // Filter: skip our own tweets, already-replied tweets, and low-engagement tweets
   const candidates = tweets.filter((t) => {
@@ -140,7 +160,7 @@ async function main() {
     // Skip if we replied to this author today
     if (repliedToAuthorToday.get(t.authorUsername)) return false;
     // Require some engagement (at least 5 likes)
-    if (t.likeCount < 3) return false;
+    if (t.likeCount < 1) return false;
     return true;
   });
 
