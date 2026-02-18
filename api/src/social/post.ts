@@ -139,21 +139,21 @@ const ENGAGEMENT_POSTS: string[][] = [
   ],
   // 2. Compatibility bait (CTA)
   [
-    "Name your sign and your partner's sign — I'll tell you the one thing you need to watch out for\n\nFull compatibility report: stellera.co/compatibility",
-    "The most UNDERRATED zodiac pairing? I'll go first: Virgo x Scorpio\n\nWhat's yours? Check it: stellera.co/compatibility",
-    "Your worst match isn't who you think it is.\n\nFind out who to avoid: stellera.co/compatibility",
+    "Name your sign and your partner's sign — I'll tell you the one thing you need to watch out for\n\nFull compatibility report — link in bio",
+    "The most UNDERRATED zodiac pairing? I'll go first: Virgo x Scorpio\n\nWhat's yours? Check yours — link in bio",
+    "Your worst match isn't who you think it is.\n\nFind out — link in bio",
   ],
   // 3. Birth chart CTA — direct
   [
-    "Your birth chart is literally a cosmic blueprint for your entire life and most people have never read theirs.\n\nGet yours free in 30 seconds: stellera.co/birth-chart",
-    "Stop reading just your Sun sign horoscope. Your Moon and Rising signs are just as important.\n\nDiscover your Big Three free: stellera.co/birth-chart",
-    "The most accurate horoscope reads your FULL chart — not just your Sun sign.\n\nGet yours free: stellera.co/birth-chart",
+    "Your birth chart is literally a cosmic blueprint for your entire life and most people have never read theirs.\n\nGet yours free in 30 seconds — link in bio",
+    "Stop reading just your Sun sign horoscope. Your Moon and Rising signs are just as important.\n\nDiscover your Big Three free — link in bio",
+    "The most accurate horoscope reads your FULL chart — not just your Sun sign.\n\nGet yours free — link in bio",
   ],
   // 4. Birth chart CTA — curiosity
   [
-    "Your Rising sign changes every 2 hours. Born 20 minutes later and you'd be a completely different person.\n\nDiscover yours: stellera.co/birth-chart",
-    "I don't trust people who don't know their Moon sign.\n\nIf that's you: stellera.co/birth-chart (it takes 30 seconds)",
-    "Your Venus sign reveals more about your love life than your Sun sign ever could.\n\nFind yours free: stellera.co/birth-chart",
+    "Your Rising sign changes every 2 hours. Born 20 minutes later and you'd be a completely different person.\n\nDiscover yours — link in bio",
+    "I don't trust people who don't know their Moon sign.\n\nIf that's you, it takes 30 seconds — link in bio",
+    "Your Venus sign reveals more about your love life than your Sun sign ever could.\n\nFind yours free — link in bio",
   ],
   // 5. Hot takes
   [
@@ -185,22 +185,22 @@ const ENGAGEMENT_POSTS: string[][] = [
     "Virgos will reorganise your entire life, fix your resume, and still say \"I'm not that helpful.\"\n\nTag a Virgo who needs to hear this",
     "Leos don't want attention. They want APPRECIATION. There's a difference and most of you don't get it",
   ],
-  // 10. Horoscope teaser (CTA)
+  // 10. Horoscope teaser (engagement hooks — no links)
   [
-    "Today's energy is chaotic for 3 signs in particular.\n\nAre you one of them? Check your horoscope: stellera.co/horoscope",
-    "One sign is about to have a major breakthrough this week.\n\nRead your full forecast: stellera.co/horoscope",
-    "The stars are being LOUD today. Some of you are going to feel this hard.\n\nYour daily reading: stellera.co/horoscope",
+    "Today's energy is chaotic for 3 signs in particular.\n\nAre you one of them? Drop your sign below",
+    "One sign is about to have a major breakthrough this week.\n\nWhich sign is it? Guess below",
+    "The stars are being LOUD today. Some of you are going to feel this hard.\n\nWhich 3 signs? Reply with yours",
   ],
-  // 11. Love & relationships (CTA)
+  // 11. Love & relationships (soft CTA)
   [
-    "The sign you can't stop dating says more about YOUR chart than theirs.\n\nSee why: stellera.co/birth-chart",
-    "Your love language is literally written in your Venus sign. Most people have no idea what theirs is.\n\nFind out free: stellera.co/birth-chart",
-    "If you keep attracting the same type, your 7th house has the answer.\n\nGet your full chart: stellera.co/birth-chart",
+    "The sign you can't stop dating says more about YOUR chart than theirs.\n\nYour chart has the answer — link in bio",
+    "Your love language is literally written in your Venus sign. Most people have no idea what theirs is.\n\nMost people have no idea. Find yours — link in bio",
+    "If you keep attracting the same type, your 7th house has the answer.\n\nYour chart has the answer",
   ],
-  // 12. Astro education (shareable)
+  // 12. Astro education (shareable — no links)
   [
     "Mercury retrograde gets all the blame but Saturn return is the one that actually changes your life.\n\nIf you're 27-30, you're IN it right now",
-    "Your Sun sign = who you are\nYour Moon sign = who you need\nYour Rising sign = who people meet\n\nKnow all three? stellera.co/birth-chart",
+    "Your Sun sign = who you are\nYour Moon sign = who you need\nYour Rising sign = who people meet\n\nKnow all three?",
     "There are 12 houses in your birth chart and each one rules a different area of your life.\n\nMost people only know their Sun sign. That's 1 out of 40+ placements",
   ],
   // 13. Debate starters
@@ -215,17 +215,17 @@ const ENGAGEMENT_POSTS: string[][] = [
     "Your sign's emotional armour:\nAries — anger\nGemini — humour\nScorpio — silence\nCapricorn — work\nPisces — daydreaming\n\nWhich one?",
     "The signs as toxic texts they'd send:\nLeo: \"You'll never find someone like me\"\nScorpio: \"I already knew\"\nAquarius: *leaves you on delivered for 3 days*",
   ],
-  // 15. Weekly forecast teaser (CTA)
+  // 15. Weekly forecast teaser (no links — pure teaser)
   [
-    "This week's energy shifts are going to hit different for mutable signs (Gemini, Virgo, Sag, Pisces).\n\nRead what's coming: stellera.co/horoscope",
-    "Cardinal signs (Aries, Cancer, Libra, Capricorn) — this week is YOUR week. Don't waste it.\n\nYour forecast: stellera.co/horoscope",
-    "Fixed signs (Taurus, Leo, Scorpio, Aquarius) — something you've been resisting is about to click.\n\nFull reading: stellera.co/horoscope",
+    "This week's energy shifts are going to hit different for mutable signs (Gemini, Virgo, Sag, Pisces).\n\nBrace yourselves",
+    "Cardinal signs (Aries, Cancer, Libra, Capricorn) — this week is YOUR week. Don't waste it.",
+    "Fixed signs (Taurus, Leo, Scorpio, Aquarius) — something you've been resisting is about to click.\n\nReady or not, it's clicking",
   ],
-  // 16. Controversial / spicy
+  // 16. Controversial / spicy (no links — engagement drivers)
   [
-    "Some of you are out here blaming Mercury retrograde when your chart has been screaming the answer for years.\n\nRead it: stellera.co/birth-chart",
-    "Astrology isn't about excusing bad behaviour. It's about understanding patterns so you can break them.\n\nStart here: stellera.co/birth-chart",
-    "Your ex wasn't toxic because of their sign. They were toxic because they never looked at their chart.\n\nDon't be like them: stellera.co/birth-chart",
+    "Some of you are out here blaming Mercury retrograde when your chart has been screaming the answer for years.\n\nRead your chart (link in bio)",
+    "Astrology isn't about excusing bad behaviour. It's about understanding patterns so you can break them.\n\nStart with your own chart",
+    "Your ex wasn't toxic because of their sign. They were toxic because they never looked at their chart.\n\nDon't be like them. Know your chart",
   ],
   // 17. Friendship dynamics
   [
@@ -235,21 +235,21 @@ const ENGAGEMENT_POSTS: string[][] = [
   ],
   // 18. Self-discovery CTA
   [
-    "Most people have NO idea why they react the way they do. Your Moon sign has the answer.\n\nDiscover yours: stellera.co/birth-chart",
-    "Feeling stuck? Your Saturn placement literally tells you what lesson you're here to learn.\n\nFull chart breakdown: stellera.co/birth-chart",
-    "You are so much more than your Sun sign. Your chart has 40+ placements that make you YOU.\n\nExplore your full chart free: stellera.co/birth-chart",
+    "Most people have NO idea why they react the way they do. Your Moon sign has the answer.\n\nDiscover yours — link in bio",
+    "Feeling stuck? Your Saturn placement literally tells you what lesson you're here to learn.\n\nFull chart breakdown — link in bio",
+    "You are so much more than your Sun sign. Your chart has 40+ placements that make you YOU.\n\nExplore your full chart free — link in bio",
   ],
-  // 19. Question hooks (reply magnets)
+  // 19. Question hooks (reply magnets — no links, replies ARE the goal)
   [
-    "Drop your sign and I'll tell you the ONE thing you need to hear today.\n\nOr read it yourself: stellera.co/horoscope",
-    "What sign do you attract the most? And is it the one you actually WANT?\n\nCheck your compatibility: stellera.co/compatibility",
-    "Be honest — do you read your horoscope daily or only when life gets messy?\n\nEither way: stellera.co/horoscope",
+    "Drop your sign and I'll tell you the ONE thing you need to hear today.",
+    "What sign do you attract the most? And is it the one you actually WANT?",
+    "Be honest — do you read your horoscope daily or only when life gets messy?",
   ],
   // 20. Conversion / urgency
   [
-    "2,847 people checked their birth chart on Stellara this week. Most were shocked by their Moon sign.\n\nJoin them: stellera.co/birth-chart",
-    "Your birth chart has been waiting your entire life for you to read it.\n\nIt takes 30 seconds. It's free. stellera.co/birth-chart",
-    "The difference between reading your Sun sign horoscope and your FULL chart horoscope is like reading a headline vs the whole article.\n\nGet the full story: stellera.co/horoscope",
+    "2,847 people checked their birth chart on Stellara this week. Most were shocked by their Moon sign.\n\nJoin them — link in bio",
+    "Your birth chart has been waiting your entire life for you to read it.\n\nIt takes 30 seconds. It's free. Link in bio",
+    "The difference between reading your Sun sign horoscope and your FULL chart horoscope is like reading a headline vs the whole article.\n\nGet the full story — link in bio",
   ],
 ];
 
@@ -280,19 +280,19 @@ function generateSignPost(slug: string, signIndex: number): SocialPost {
   // Star rating display
   const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
-  // Rotating post formats
+  // Rotating post formats (no external links — image has stellera.co watermark)
   const formats = [
     // Format 1: Hook + teaser + ratings
     () =>
-      `${sign.symbol} ${hook}.\n\n${firstSentence}\n\nLove ${stars(ratings.love)}\nCareer ${stars(ratings.career)}\nWellness ${stars(ratings.wellness)}\n\nFull reading: stellera.co/horoscope/${slug}`,
+      `${sign.symbol} ${hook}.\n\n${firstSentence}\n\nLove ${stars(ratings.love)}\nCareer ${stars(ratings.career)}\nWellness ${stars(ratings.wellness)}\n\nFull reading in bio`,
 
-    // Format 2: Hook + lucky info + CTA
+    // Format 2: Hook + lucky info + engagement
     () =>
-      `${sign.symbol} ${sign.name} — ${formatDate()}\n\n${hook}.\n\n${firstSentence}\n\nLucky number: ${horoscope.luckyNumber} | Best match: ${horoscope.compatibility}\n\nRead more: stellera.co/horoscope/${slug}`,
+      `${sign.symbol} ${sign.name} — ${formatDate()}\n\n${hook}.\n\n${firstSentence}\n\nLucky number: ${horoscope.luckyNumber} | Best match: ${horoscope.compatibility}\n\nWhat resonates? Reply with your sign`,
 
     // Format 3: Short and punchy
     () =>
-      `${sign.symbol} ${sign.name} daily horoscope\n\n${hook}.\n\n${firstSentence}\n\nYour full reading is waiting: stellera.co/horoscope/${slug}`,
+      `${sign.symbol} ${sign.name} daily horoscope\n\n${hook}.\n\n${firstSentence}\n\nSave this & check back tonight`,
   ];
 
   const format = pick(formats, seed);
