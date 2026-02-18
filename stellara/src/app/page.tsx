@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -20,6 +20,7 @@ import {
   HOROSCOPE_TEASERS,
   HOROSCOPE_RATINGS,
 } from '@/lib/zodiac-data';
+import EmailCapture from '@/components/EmailCapture';
 
 /* ================================================================
    DATA
@@ -132,52 +133,6 @@ const FREE_VS_PREMIUM = [
   { feature: 'Progressed Chart Tracking', free: false, premium: true },
   { feature: 'Priority AI Analysis', free: false, premium: true },
 ];
-
-/* ================================================================
-   STAR PARTICLES BACKGROUND (mobile-optimized)
-   ================================================================ */
-
-function StarField() {
-  const [count, setCount] = useState(80);
-
-  useEffect(() => {
-    if (window.innerWidth < 768) {
-      setCount(30);
-    }
-  }, []);
-
-  const stars = useMemo(
-    () =>
-      Array.from({ length: count }, (_, i) => ({
-        id: i,
-        left: `${(i * 17.3 + 7) % 100}%`,
-        top: `${(i * 23.7 + 13) % 100}%`,
-        size: i % 5 === 0 ? 'star--lg' : i % 3 === 0 ? '' : 'star--sm',
-        color:
-          i % 11 === 0 ? 'star--gold' : i % 7 === 0 ? 'star--pink' : i % 5 === 0 ? 'star--blue' : '',
-        delay: `${(i * 0.37) % 5}s`,
-        duration: `${3 + (i % 4)}s`,
-      })),
-    [count]
-  );
-
-  return (
-    <div className="starfield" aria-hidden="true">
-      {stars.map((s) => (
-        <div
-          key={s.id}
-          className={`star ${s.size} ${s.color}`}
-          style={{
-            left: s.left,
-            top: s.top,
-            animationDelay: s.delay,
-            animationDuration: s.duration,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 /* ================================================================
    SIGN PICKER — interactive 12-sign grid
@@ -431,8 +386,6 @@ function HomePageContent() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      <StarField />
-
       <main className="relative z-10">
         {/* ============================================
             SECTION 1 — HERO
@@ -456,25 +409,14 @@ function HomePageContent() {
             aria-hidden="true"
           />
 
-          {/* Sign Picker */}
-          <div className="mb-4 animate-in w-full max-w-lg mx-auto">
-            <p className="text-dust-400 text-sm text-center mb-3 uppercase tracking-widest font-medium">
-              What&apos;s your sign?
-            </p>
-            <SignPicker selectedSlug={selectedSign} onSelect={setSelectedSign} />
-          </div>
-
-          {/* Teaser Display */}
-          <HeroTeaser slug={selectedSign} />
-
           {/* Headline */}
-          <h1 className="gradient-text text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-center animate-in max-w-4xl mt-6">
+          <h1 className="gradient-text text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-center animate-in max-w-4xl">
             What Do Your Stars Say Today?
           </h1>
 
           {/* Subheadline */}
           <p className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl text-dust-300 text-center max-w-xl leading-relaxed animate-in">
-            Tap your sign for today&apos;s free horoscope, personalized birth chart, or compatibility reading.
+            Free horoscopes, personalized birth charts, and compatibility readings — powered by real astronomy.
           </p>
 
           {/* CTAs */}
@@ -494,6 +436,32 @@ function HomePageContent() {
               Check Compatibility
             </Link>
           </div>
+
+          {/* Trust line */}
+          <p className="mt-4 text-xs text-dust-500 animate-in text-center">
+            No signup required &mdash; generate your chart in 30 seconds
+          </p>
+
+          {/* Social proof */}
+          <div className="mt-3 flex items-center gap-2 animate-in">
+            <div className="flex gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} size={12} className="fill-stardust-400 text-stardust-400" />
+              ))}
+            </div>
+            <span className="text-xs text-dust-400">Loved by thousands of stargazers</span>
+          </div>
+
+          {/* Sign Picker */}
+          <div className="mt-8 mb-4 animate-in w-full max-w-lg mx-auto">
+            <p className="text-dust-400 text-sm text-center mb-3 uppercase tracking-widest font-medium">
+              What&apos;s your sign?
+            </p>
+            <SignPicker selectedSlug={selectedSign} onSelect={setSelectedSign} />
+          </div>
+
+          {/* Teaser Display */}
+          <HeroTeaser slug={selectedSign} />
 
           {/* Scroll indicator */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-dust-500 animate-in">
@@ -670,6 +638,21 @@ function HomePageContent() {
               Get Started — It&apos;s Free
             </Link>
           </div>
+        </section>
+
+        {/* Divider */}
+        <div className="section-divider mx-auto max-w-5xl" />
+
+        {/* ============================================
+            EMAIL CAPTURE
+            ============================================ */}
+        <section className="px-4 sm:px-6 lg:px-8 py-16 sm:py-20 max-w-xl mx-auto">
+          <EmailCapture
+            heading="Get your free daily horoscope by email"
+            subheading="Join our community of stargazers. No spam, just cosmic guidance."
+            variant="card"
+            source="homepage"
+          />
         </section>
 
         {/* Divider */}

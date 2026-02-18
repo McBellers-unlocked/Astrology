@@ -63,6 +63,17 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_email_sequence_user
     ON email_sequence_log(user_id);
 
+  CREATE TABLE IF NOT EXISTS subscriber_sequence_log (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    subscriber_id   TEXT NOT NULL,
+    email_key       TEXT NOT NULL,
+    sent_at         TEXT DEFAULT (datetime('now')),
+    UNIQUE(subscriber_id, email_key)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_subscriber_sequence
+    ON subscriber_sequence_log(subscriber_id);
+
   CREATE TABLE IF NOT EXISTS reply_log (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     original_tweet_id TEXT UNIQUE NOT NULL,

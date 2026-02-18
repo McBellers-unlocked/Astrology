@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Sparkles,
   Star,
@@ -874,6 +875,24 @@ function FullReportTab() {
 }
 
 /* ================================================================
+   DATE DROPDOWN HELPERS
+   ================================================================ */
+
+const MONTHS = [
+  { value: '01', label: 'January' },  { value: '02', label: 'February' },
+  { value: '03', label: 'March' },    { value: '04', label: 'April' },
+  { value: '05', label: 'May' },      { value: '06', label: 'June' },
+  { value: '07', label: 'July' },     { value: '08', label: 'August' },
+  { value: '09', label: 'September' },{ value: '10', label: 'October' },
+  { value: '11', label: 'November' }, { value: '12', label: 'December' },
+];
+
+const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - 1920 + 1 }, (_, i) => String(CURRENT_YEAR - i));
+
+/* ================================================================
    MAIN PAGE COMPONENT
    ================================================================ */
 
@@ -892,6 +911,7 @@ export default function BirthChartPage() {
   const [activeTab, setActiveTab] = useState<TabName>('Chart Overview');
   const [isGenerating, setIsGenerating] = useState(false);
   const [houseGuideOpen, setHouseGuideOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -1006,21 +1026,39 @@ export default function BirthChartPage() {
               />
             </div>
 
-            {/* Birth Date */}
+            {/* Birth Date — three dropdowns so users can jump straight to their year */}
             <div className="space-y-2">
-              <label htmlFor="birthDate" className="flex items-center gap-2 text-sm font-medium text-dust-200">
+              <label className="flex items-center gap-2 text-sm font-medium text-dust-200">
                 <CalendarDays className="w-4 h-4 text-celestial-300" />
                 Birth Date
               </label>
-              <input
-                type="date"
-                id="birthDate"
-                name="birthDate"
-                value={formData.birthDate}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all [color-scheme:dark]"
-              />
+              {(() => {
+                const [y = '', m = '', d = ''] = formData.birthDate ? formData.birthDate.split('-') : [];
+                const selectCls = "px-3 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all appearance-none";
+                const update = (part: 'y' | 'm' | 'd', val: string) => {
+                  const ny = part === 'y' ? val : y;
+                  const nm = part === 'm' ? val : m;
+                  const nd = part === 'd' ? val : d;
+                  const dateStr = (ny && nm && nd) ? `${ny}-${nm}-${nd}` : '';
+                  setFormData((prev) => ({ ...prev, birthDate: dateStr }));
+                };
+                return (
+                  <div className="grid grid-cols-3 gap-2">
+                    <select value={m} onChange={(e) => update('m', e.target.value)} required className={selectCls}>
+                      <option value="" disabled>Month</option>
+                      {MONTHS.map((mo) => <option key={mo.value} value={mo.value}>{mo.label}</option>)}
+                    </select>
+                    <select value={d} onChange={(e) => update('d', e.target.value)} required className={selectCls}>
+                      <option value="" disabled>Day</option>
+                      {DAYS.map((day) => <option key={day} value={day}>{parseInt(day)}</option>)}
+                    </select>
+                    <select value={y} onChange={(e) => update('y', e.target.value)} required className={selectCls}>
+                      <option value="" disabled>Year</option>
+                      {YEARS.map((yr) => <option key={yr} value={yr}>{yr}</option>)}
+                    </select>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Birth Time */}
@@ -1060,59 +1098,71 @@ export default function BirthChartPage() {
               />
             </div>
 
-            {/* House System */}
-            <div className="space-y-2">
-              <label htmlFor="houseSystem" className="flex items-center gap-2 text-sm font-medium text-dust-200">
-                <CircleDot className="w-4 h-4 text-celestial-300" />
-                House System
-              </label>
-              <select
-                id="houseSystem"
-                name="houseSystem"
-                value={formData.houseSystem}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all appearance-none cursor-pointer"
-              >
-                {HOUSE_SYSTEMS.map((sys) => (
-                  <option key={sys} value={sys} className="bg-space-800 text-foreground">
-                    {sys}
-                  </option>
-                ))}
-              </select>
+            {/* Advanced Options Toggle */}
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((prev) => !prev)}
+              className="flex items-center gap-1.5 text-sm text-dust-400 hover:text-celestial-200 transition-colors"
+            >
+              <CircleDot className="w-3.5 h-3.5" />
+              <span>Advanced options</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${advancedOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-              {/* Helper hint */}
-              <p className="text-xs text-dust-500 mt-1.5">
-                Not sure? <span className="text-celestial-300">Placidus</span> is the most widely used system.
-              </p>
+            {/* Collapsible House System */}
+            <div className={`grid transition-all duration-300 ease-in-out ${advancedOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+              <div className="overflow-hidden">
+                <div className="space-y-2 pt-1">
+                  <label htmlFor="houseSystem" className="flex items-center gap-2 text-sm font-medium text-dust-200">
+                    House System
+                  </label>
+                  <select
+                    id="houseSystem"
+                    name="houseSystem"
+                    value={formData.houseSystem}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all appearance-none cursor-pointer"
+                  >
+                    {HOUSE_SYSTEMS.map((sys) => (
+                      <option key={sys} value={sys} className="bg-space-800 text-foreground">
+                        {sys}
+                      </option>
+                    ))}
+                  </select>
 
-              {/* Expandable house system guide */}
-              <button
-                type="button"
-                onClick={() => setHouseGuideOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 mt-2 text-xs text-dust-400 hover:text-celestial-200 transition-colors"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>Learn about house systems</span>
-                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${houseGuideOpen ? 'rotate-180' : ''}`} />
-              </button>
+                  <p className="text-xs text-dust-500 mt-1.5">
+                    Not sure? <span className="text-celestial-300">Placidus</span> is the most widely used system.
+                  </p>
 
-              <div className={`grid transition-all duration-300 ease-in-out ${houseGuideOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}>
-                <div className="overflow-hidden">
-                  <div className="rounded-xl border border-celestial-500/10 bg-space-800/40 p-4 space-y-3 text-xs leading-relaxed text-dust-400">
-                    <div>
-                      <span className="font-semibold text-celestial-200">Placidus</span> — The most popular system worldwide. Uses time-based division of the sky. Best for most readings.
-                    </div>
-                    <div>
-                      <span className="font-semibold text-celestial-200">Koch</span> — Similar to Placidus but factors in birth location more heavily. Popular in German-speaking countries.
-                    </div>
-                    <div>
-                      <span className="font-semibold text-celestial-200">Whole Sign</span> — Each house spans one full zodiac sign. The oldest system, favoured in Hellenistic astrology.
-                    </div>
-                    <div>
-                      <span className="font-semibold text-celestial-200">Equal</span> — Each house is exactly 30&deg; from the Ascendant. Simple and consistent across all latitudes.
-                    </div>
-                    <div>
-                      <span className="font-semibold text-celestial-200">Campanus</span> — Divides the sky by space rather than time. Less common, used in some medieval traditions.
+                  <button
+                    type="button"
+                    onClick={() => setHouseGuideOpen((prev) => !prev)}
+                    className="flex items-center gap-1.5 mt-2 text-xs text-dust-400 hover:text-celestial-200 transition-colors"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>Learn about house systems</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${houseGuideOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <div className={`grid transition-all duration-300 ease-in-out ${houseGuideOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}>
+                    <div className="overflow-hidden">
+                      <div className="rounded-xl border border-celestial-500/10 bg-space-800/40 p-4 space-y-3 text-xs leading-relaxed text-dust-400">
+                        <div>
+                          <span className="font-semibold text-celestial-200">Placidus</span> — The most popular system worldwide. Uses time-based division of the sky. Best for most readings.
+                        </div>
+                        <div>
+                          <span className="font-semibold text-celestial-200">Koch</span> — Similar to Placidus but factors in birth location more heavily. Popular in German-speaking countries.
+                        </div>
+                        <div>
+                          <span className="font-semibold text-celestial-200">Whole Sign</span> — Each house spans one full zodiac sign. The oldest system, favoured in Hellenistic astrology.
+                        </div>
+                        <div>
+                          <span className="font-semibold text-celestial-200">Equal</span> — Each house is exactly 30&deg; from the Ascendant. Simple and consistent across all latitudes.
+                        </div>
+                        <div>
+                          <span className="font-semibold text-celestial-200">Campanus</span> — Divides the sky by space rather than time. Less common, used in some medieval traditions.
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1294,8 +1344,30 @@ export default function BirthChartPage() {
           </div>
         </div>
 
+        {/* Signup nudge — only for non-logged-in users */}
+        {!user && (
+          <div className="mt-12 mx-auto max-w-xl animate-in" style={{ animationDelay: '250ms' }}>
+            <div className="glass-card p-6 sm:p-8 text-center">
+              <User className="w-8 h-8 text-celestial-300 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Save your chart
+              </h3>
+              <p className="text-sm text-dust-400 mb-5 max-w-sm mx-auto">
+                Create a free account to save your chart, track transits, and get personalized readings.
+              </p>
+              <Link
+                href="/signup"
+                className="btn-glow inline-flex items-center gap-2 px-6 py-3 text-sm"
+              >
+                Create Free Account
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Email Capture — post-chart generation */}
-        <div className="mt-12 mx-auto max-w-xl animate-in" style={{ animationDelay: '300ms' }}>
+        <div className="mt-8 mx-auto max-w-xl animate-in" style={{ animationDelay: '300ms' }}>
           <EmailCapture
             heading="Get your chart insights by email"
             subheading="Receive transit alerts, monthly forecasts, and updates when planets activate your chart."
