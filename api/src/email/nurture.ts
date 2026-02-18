@@ -289,6 +289,25 @@ function subscriberWrapper(content: string, subscriberId: string): string {
 }
 
 const SUBSCRIBER_SEQUENCE: SubscriberEmail[] = [
+  // Day 0: Welcome — missed the real-time welcome email
+  {
+    key: 'sub_nurture_0_welcome',
+    delayDays: 0,
+    subject: "Welcome to Stellara — your cosmic journey begins",
+    html: (sub) => subscriberWrapper(`
+      <h1 style="color: #7c3aed;">Welcome, stargazer!</h1>
+      <p>You&rsquo;re now subscribed to Stellara&rsquo;s cosmic updates. Here&rsquo;s what to expect:</p>
+      <ul>
+        <li><strong>Daily horoscope insights</strong> for all 12 signs</li>
+        <li><strong>Major transit alerts</strong> &mdash; Mercury retrograde, full moons, eclipses</li>
+        <li><strong>Weekly cosmic energy forecasts</strong></li>
+      </ul>
+      <p>Start by reading today&rsquo;s horoscope &mdash; tap your sign and see what the stars have in store.</p>
+      ${ctaButton("Read Today's Horoscope", `${API_URL}/horoscope`)}
+      <p style="color: #666; font-size: 13px; margin-top: 24px;">Your stars, decoded. &mdash; Stellara</p>
+    `, sub.id),
+  },
+
   // Day 3: Drive to site — daily horoscope
   {
     key: 'sub_nurture_1_horoscope',
