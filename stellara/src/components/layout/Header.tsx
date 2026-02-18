@@ -61,6 +61,7 @@ export default function Header() {
   return (
     <>
       <header
+        id="main-site-header"
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-space-900/80 backdrop-blur-xl border-b border-celestial-700/20 shadow-lg shadow-space-900/50"

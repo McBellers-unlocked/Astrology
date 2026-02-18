@@ -86,7 +86,7 @@ export default function Starfield() {
   }
 
   return (
-    <div className="starfield" aria-hidden="true">
+    <div id="starfield-bg" className="starfield" aria-hidden="true">
       {/* Subtle radial gradient overlay (purple/blue) */}
       <div
         className="absolute inset-0"

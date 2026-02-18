@@ -40,6 +40,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[#0f0a1a]">
+      {/* Hide main site header/footer/starfield on admin pages */}
+      <style>{`#main-site-header, #main-site-footer, #starfield-bg { display: none !important; }`}</style>
       {/* Admin header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#1a1230]/90 backdrop-blur border-b border-purple-500/20">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
