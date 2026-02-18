@@ -87,7 +87,7 @@ async function generateReply(tweet: SearchedTweet): Promise<string | null> {
 - Be conversational and fun (not corporate or salesy)
 - Show genuine astrology knowledge
 - Be under 200 characters (short and punchy)
-- Occasionally (30% of the time) include a natural mention of stellera.co — but ONLY if it fits naturally
+- Rarely (about 10% of the time) include a natural mention of stellera.co — but ONLY if it fits naturally
 - Never use hashtags
 - Match the energy of the original tweet (funny → funny, serious → insightful)
 - Feel like a real astrology-enthusiast friend replying, not a brand
