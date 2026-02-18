@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import db from '../db.js';
 import { verifyToken } from '../lib/jwt.js';
+import { readTodayResults, type PostResult } from '../social/notify.js';
 
 const router = Router();
 
@@ -316,6 +317,108 @@ router.get('/user/:id', (req, res) => {
     res.json({ user, nurtureEmails });
   } catch (err) {
     console.error('Admin user detail error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ------------------------------------------------------------------
+// GET /admin/social — Social posting & engagement stats
+// ------------------------------------------------------------------
+router.get('/social', (_req, res) => {
+  try {
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    // --- JSONL post results (today) ---
+    const todayPosts = readTodayResults();
+    const totalPosts = todayPosts.length;
+    const successPosts = todayPosts.filter((r) => r.success).length;
+    const failedPosts = totalPosts - successPosts;
+
+    const byType: Record<string, { total: number; success: number }> = {
+      horoscope: { total: 0, success: 0 },
+      engagement: { total: 0, success: 0 },
+      thread: { total: 0, success: 0 },
+    };
+    for (const r of todayPosts) {
+      const bucket = byType[r.type] ?? { total: 0, success: 0 };
+      bucket.total++;
+      if (r.success) bucket.success++;
+    }
+
+    // --- Reply log from SQLite ---
+    const totalReplies = (
+      db.prepare('SELECT COUNT(*) as count FROM reply_log').get() as { count: number }
+    ).count;
+
+    const repliesToday = (
+      db.prepare('SELECT COUNT(*) as count FROM reply_log WHERE created_at >= ?').get(todayStr) as {
+        count: number;
+      }
+    ).count;
+
+    const successfulRepliesToday = (
+      db
+        .prepare(
+          'SELECT COUNT(*) as count FROM reply_log WHERE created_at >= ? AND reply_tweet_id IS NOT NULL',
+        )
+        .get(todayStr) as { count: number }
+    ).count;
+
+    const failedRepliesToday = repliesToday - successfulRepliesToday;
+
+    // Replies over last 7 days (by day)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const repliesByDay = db
+      .prepare(
+        `SELECT DATE(created_at) as date, COUNT(*) as count
+         FROM reply_log WHERE created_at >= ?
+         GROUP BY DATE(created_at) ORDER BY date`,
+      )
+      .all(sevenDaysAgo) as Array<{ date: string; count: number }>;
+
+    // Top engaged authors (most replies sent to)
+    const topAuthors = db
+      .prepare(
+        `SELECT author_username as username, COUNT(*) as count
+         FROM reply_log
+         GROUP BY author_username ORDER BY count DESC LIMIT 10`,
+      )
+      .all() as Array<{ username: string; count: number }>;
+
+    // Recent replies (last 20)
+    const recentReplies = db
+      .prepare(
+        `SELECT original_tweet_id, author_username, reply_tweet_id, reply_text, created_at
+         FROM reply_log ORDER BY created_at DESC LIMIT 20`,
+      )
+      .all() as Array<{
+      original_tweet_id: string;
+      author_username: string;
+      reply_tweet_id: string | null;
+      reply_text: string;
+      created_at: string;
+    }>;
+
+    res.json({
+      posts: {
+        today: todayPosts,
+        totalToday: totalPosts,
+        successToday: successPosts,
+        failedToday: failedPosts,
+        byType,
+      },
+      replies: {
+        total: totalReplies,
+        today: repliesToday,
+        successfulToday: successfulRepliesToday,
+        failedToday: failedRepliesToday,
+        repliesByDay,
+        topAuthors,
+        recentReplies,
+      },
+    });
+  } catch (err) {
+    console.error('Admin social error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

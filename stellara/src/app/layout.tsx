@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import Starfield from "@/components/layout/Starfield";
+import LayoutShell from "@/components/layout/LayoutShell";
 import JsonLd from "@/components/seo/JsonLd";
 import Analytics from "@/components/Analytics";
 import Providers from "@/components/Providers";
@@ -128,12 +126,9 @@ export default function RootLayout({
       >
         <Providers>
           <Analytics />
-          <Starfield />
-          <Header />
-          <main className="relative z-10 flex-1 pt-16 lg:pt-18">
+          <LayoutShell>
             {children}
-          </main>
-          <Footer />
+          </LayoutShell>
         </Providers>
       </body>
     </html>

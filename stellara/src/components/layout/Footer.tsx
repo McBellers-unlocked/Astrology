@@ -46,7 +46,7 @@ export default function Footer() {
   const currentLanguage = languages.find((l) => l.code === selectedLanguage);
 
   return (
-    <footer className="relative z-10 mt-auto">
+    <footer id="main-site-footer" className="relative z-10 mt-auto">
       {/* Section divider at top */}
       <div className="section-divider" />
 

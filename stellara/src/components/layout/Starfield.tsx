@@ -48,12 +48,15 @@ const colorClassMap: Record<Star["color"], string> = {
 
 export default function Starfield() {
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
     setMounted(true);
   }, []);
 
-  const stars = useMemo(() => generateStars(120), []);
+  const starCount = isMobile ? 40 : 120;
+  const stars = useMemo(() => generateStars(starCount), [starCount]);
 
   // Larger, brighter accent stars
   const accentStars = useMemo(
@@ -86,7 +89,7 @@ export default function Starfield() {
   }
 
   return (
-    <div className="starfield" aria-hidden="true">
+    <div id="starfield-bg" className="starfield" aria-hidden="true">
       {/* Subtle radial gradient overlay (purple/blue) */}
       <div
         className="absolute inset-0"

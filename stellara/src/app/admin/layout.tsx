@@ -30,45 +30,51 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       });
   }, [user, isLoading, router]);
 
-  if (isLoading || checking || !isAdmin) {
-    return (
-      <div className="min-h-screen bg-[#0f0a1a] flex items-center justify-center">
-        <div className="text-purple-300 text-lg">Loading...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#0f0a1a]">
-      {/* Admin header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#1a1230]/90 backdrop-blur border-b border-purple-500/20">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-purple-300 font-semibold text-lg">
-              Stellara Admin
-            </Link>
-            <nav className="flex gap-4 text-sm">
-              <Link href="/admin" className="text-gray-400 hover:text-white transition-colors">
-                Dashboard
-              </Link>
-              <Link href="/admin/users" className="text-gray-400 hover:text-white transition-colors">
-                Users
-              </Link>
-              <Link href="/admin/subscribers" className="text-gray-400 hover:text-white transition-colors">
-                Subscribers
-              </Link>
-            </nav>
-          </div>
-          <Link href="/" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">
-            Back to site
-          </Link>
-        </div>
-      </header>
+    <>
+      {/* Hide main site header/footer/starfield on admin pages — rendered unconditionally */}
+      <style>{`#main-site-header, #main-site-footer, #starfield-bg, #main-site-wrapper { display: none !important; }`}</style>
 
-      {/* Content */}
-      <main className="pt-14 px-4 pb-12">
-        <div className="max-w-7xl mx-auto py-8">{children}</div>
-      </main>
-    </div>
+      {(isLoading || checking || !isAdmin) ? (
+        <div className="min-h-screen bg-[#0f0a1a] flex items-center justify-center">
+          <div className="text-purple-300 text-lg">Loading...</div>
+        </div>
+      ) : (
+        <div className="min-h-screen bg-[#0f0a1a]">
+          {/* Admin header */}
+          <header className="fixed top-0 left-0 right-0 z-50 bg-[#1a1230]/90 backdrop-blur border-b border-purple-500/20">
+            <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <Link href="/admin" className="text-purple-300 font-semibold text-lg">
+                  Stellara Admin
+                </Link>
+                <nav className="flex gap-4 text-sm">
+                  <Link href="/admin" className="text-gray-400 hover:text-white transition-colors">
+                    Dashboard
+                  </Link>
+                  <Link href="/admin/users" className="text-gray-400 hover:text-white transition-colors">
+                    Users
+                  </Link>
+                  <Link href="/admin/subscribers" className="text-gray-400 hover:text-white transition-colors">
+                    Subscribers
+                  </Link>
+                  <Link href="/admin/social" className="text-gray-400 hover:text-white transition-colors">
+                    Social
+                  </Link>
+                </nav>
+              </div>
+              <Link href="/" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">
+                Back to site
+              </Link>
+            </div>
+          </header>
+
+          {/* Content */}
+          <main className="pt-14 px-4 pb-12">
+            <div className="max-w-7xl mx-auto py-8">{children}</div>
+          </main>
+        </div>
+      )}
+    </>
   );
 }
