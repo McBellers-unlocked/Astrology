@@ -874,6 +874,24 @@ function FullReportTab() {
 }
 
 /* ================================================================
+   DATE DROPDOWN HELPERS
+   ================================================================ */
+
+const MONTHS = [
+  { value: '01', label: 'January' },  { value: '02', label: 'February' },
+  { value: '03', label: 'March' },    { value: '04', label: 'April' },
+  { value: '05', label: 'May' },      { value: '06', label: 'June' },
+  { value: '07', label: 'July' },     { value: '08', label: 'August' },
+  { value: '09', label: 'September' },{ value: '10', label: 'October' },
+  { value: '11', label: 'November' }, { value: '12', label: 'December' },
+];
+
+const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - 1920 + 1 }, (_, i) => String(CURRENT_YEAR - i));
+
+/* ================================================================
    MAIN PAGE COMPONENT
    ================================================================ */
 
@@ -1006,21 +1024,39 @@ export default function BirthChartPage() {
               />
             </div>
 
-            {/* Birth Date */}
+            {/* Birth Date — three dropdowns so users can jump straight to their year */}
             <div className="space-y-2">
-              <label htmlFor="birthDate" className="flex items-center gap-2 text-sm font-medium text-dust-200">
+              <label className="flex items-center gap-2 text-sm font-medium text-dust-200">
                 <CalendarDays className="w-4 h-4 text-celestial-300" />
                 Birth Date
               </label>
-              <input
-                type="date"
-                id="birthDate"
-                name="birthDate"
-                value={formData.birthDate}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all [color-scheme:dark]"
-              />
+              {(() => {
+                const [y = '', m = '', d = ''] = formData.birthDate ? formData.birthDate.split('-') : [];
+                const selectCls = "px-3 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all appearance-none";
+                const update = (part: 'y' | 'm' | 'd', val: string) => {
+                  const ny = part === 'y' ? val : y;
+                  const nm = part === 'm' ? val : m;
+                  const nd = part === 'd' ? val : d;
+                  const dateStr = (ny && nm && nd) ? `${ny}-${nm}-${nd}` : '';
+                  setFormData((prev) => ({ ...prev, birthDate: dateStr }));
+                };
+                return (
+                  <div className="grid grid-cols-3 gap-2">
+                    <select value={m} onChange={(e) => update('m', e.target.value)} required className={selectCls}>
+                      <option value="" disabled>Month</option>
+                      {MONTHS.map((mo) => <option key={mo.value} value={mo.value}>{mo.label}</option>)}
+                    </select>
+                    <select value={d} onChange={(e) => update('d', e.target.value)} required className={selectCls}>
+                      <option value="" disabled>Day</option>
+                      {DAYS.map((day) => <option key={day} value={day}>{parseInt(day)}</option>)}
+                    </select>
+                    <select value={y} onChange={(e) => update('y', e.target.value)} required className={selectCls}>
+                      <option value="" disabled>Year</option>
+                      {YEARS.map((yr) => <option key={yr} value={yr}>{yr}</option>)}
+                    </select>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Birth Time */}
