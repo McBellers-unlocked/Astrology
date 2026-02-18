@@ -432,7 +432,7 @@ async function runUserNurture(now: Date): Promise<{ sent: number; skipped: numbe
         errors++;
       }
 
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 600));
     }
   }
 
@@ -488,7 +488,7 @@ async function runSubscriberNurture(now: Date): Promise<{ sent: number; skipped:
         errors++;
       }
 
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 600));
     }
   }
 
