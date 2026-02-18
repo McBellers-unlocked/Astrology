@@ -17,7 +17,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
     <>
       <Starfield />
       <Header />
-      <main className="relative z-10 flex-1 pt-16 lg:pt-18">
+      <main id="main-site-wrapper" className="relative z-10 flex-1 pt-16 lg:pt-18">
         {children}
       </main>
       <Footer />
