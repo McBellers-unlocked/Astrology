@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Sparkles,
   Star,
@@ -13,25 +14,16 @@ import {
   Zap,
   Shield,
 } from 'lucide-react';
+import {
+  SIGNS,
+  ELEMENT_COLORS,
+  HOROSCOPE_TEASERS,
+  HOROSCOPE_RATINGS,
+} from '@/lib/zodiac-data';
 
 /* ================================================================
    DATA
    ================================================================ */
-
-const ZODIAC_SIGNS = [
-  { name: 'Aries', symbol: '\u2648', dates: 'Mar 21 - Apr 19', teaser: 'A bold career opportunity arrives today — trust your instincts.', rating: 4, slug: 'aries' },
-  { name: 'Taurus', symbol: '\u2649', dates: 'Apr 20 - May 20', teaser: 'Financial clarity emerges as Venus blesses your second house.', rating: 5, slug: 'taurus' },
-  { name: 'Gemini', symbol: '\u264A', dates: 'May 21 - Jun 20', teaser: 'A meaningful conversation shifts your perspective entirely.', rating: 3, slug: 'gemini' },
-  { name: 'Cancer', symbol: '\u264B', dates: 'Jun 21 - Jul 22', teaser: 'Home and family matters bring unexpected joy this evening.', rating: 4, slug: 'cancer' },
-  { name: 'Leo', symbol: '\u264C', dates: 'Jul 23 - Aug 22', teaser: 'The spotlight finds you naturally — step into your creative power.', rating: 5, slug: 'leo' },
-  { name: 'Virgo', symbol: '\u264D', dates: 'Aug 23 - Sep 22', teaser: 'Details you overlooked now reveal a powerful pattern.', rating: 3, slug: 'virgo' },
-  { name: 'Libra', symbol: '\u264E', dates: 'Sep 23 - Oct 22', teaser: 'A relationship deepens as honest words flow freely.', rating: 4, slug: 'libra' },
-  { name: 'Scorpio', symbol: '\u264F', dates: 'Oct 23 - Nov 21', teaser: 'Deep transformation accelerates — release what no longer serves you.', rating: 5, slug: 'scorpio' },
-  { name: 'Sagittarius', symbol: '\u2650', dates: 'Nov 22 - Dec 21', teaser: 'Adventure calls — an unexpected travel opportunity surfaces.', rating: 4, slug: 'sagittarius' },
-  { name: 'Capricorn', symbol: '\u2651', dates: 'Dec 22 - Jan 19', teaser: 'Your long-term strategy finally starts paying dividends.', rating: 4, slug: 'capricorn' },
-  { name: 'Aquarius', symbol: '\u2652', dates: 'Jan 20 - Feb 18', teaser: 'Innovative thinking leads to a breakthrough in your community.', rating: 3, slug: 'aquarius' },
-  { name: 'Pisces', symbol: '\u2653', dates: 'Feb 19 - Mar 20', teaser: 'Your intuition is razor-sharp — trust the visions that arise.', rating: 5, slug: 'pisces' },
-];
 
 const TESTIMONIALS = [
   {
@@ -142,19 +134,32 @@ const FREE_VS_PREMIUM = [
 ];
 
 /* ================================================================
-   STAR PARTICLES BACKGROUND
+   STAR PARTICLES BACKGROUND (mobile-optimized)
    ================================================================ */
 
 function StarField() {
-  const stars = Array.from({ length: 80 }, (_, i) => ({
-    id: i,
-    left: `${(i * 17.3 + 7) % 100}%`,
-    top: `${(i * 23.7 + 13) % 100}%`,
-    size: i % 5 === 0 ? 'star--lg' : i % 3 === 0 ? '' : 'star--sm',
-    color: i % 11 === 0 ? 'star--gold' : i % 7 === 0 ? 'star--pink' : i % 5 === 0 ? 'star--blue' : '',
-    delay: `${(i * 0.37) % 5}s`,
-    duration: `${3 + (i % 4)}s`,
-  }));
+  const [count, setCount] = useState(80);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setCount(30);
+    }
+  }, []);
+
+  const stars = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => ({
+        id: i,
+        left: `${(i * 17.3 + 7) % 100}%`,
+        top: `${(i * 23.7 + 13) % 100}%`,
+        size: i % 5 === 0 ? 'star--lg' : i % 3 === 0 ? '' : 'star--sm',
+        color:
+          i % 11 === 0 ? 'star--gold' : i % 7 === 0 ? 'star--pink' : i % 5 === 0 ? 'star--blue' : '',
+        delay: `${(i * 0.37) % 5}s`,
+        duration: `${3 + (i % 4)}s`,
+      })),
+    [count]
+  );
 
   return (
     <div className="starfield" aria-hidden="true">
@@ -175,88 +180,107 @@ function StarField() {
 }
 
 /* ================================================================
-   ZODIAC WHEEL VISUAL
+   SIGN PICKER — interactive 12-sign grid
    ================================================================ */
 
-function ZodiacWheel() {
-  const symbols = ZODIAC_SIGNS.map((z) => z.symbol);
+function SignPicker({
+  selectedSlug,
+  onSelect,
+}: {
+  selectedSlug: string | null;
+  onSelect: (slug: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-3 max-w-md sm:max-w-lg mx-auto">
+      {SIGNS.map((sign) => {
+        const colors = ELEMENT_COLORS[sign.element];
+        const isSelected = selectedSlug === sign.slug;
+
+        return (
+          <button
+            key={sign.slug}
+            type="button"
+            onClick={() => onSelect(sign.slug)}
+            className={`flex flex-col items-center justify-center gap-1 p-3 sm:p-4 rounded-xl border transition-all duration-200 ${
+              isSelected
+                ? `${colors.bg} ${colors.border} ${colors.glow} scale-105`
+                : 'border-celestial-400/10 bg-celestial-400/5 hover:border-celestial-400/25 hover:bg-celestial-400/10'
+            }`}
+            aria-label={`${sign.name} — ${sign.dates}`}
+          >
+            <span
+              className={`text-2xl sm:text-3xl transition-colors ${
+                isSelected ? colors.text : 'text-dust-300'
+              }`}
+            >
+              {sign.symbol}
+            </span>
+            <span
+              className={`text-[0.6rem] sm:text-xs font-medium transition-colors ${
+                isSelected ? 'text-foreground' : 'text-dust-500'
+              }`}
+            >
+              {sign.name}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ================================================================
+   HERO TEASER — shows horoscope preview for selected/rotating sign
+   ================================================================ */
+
+function HeroTeaser({ slug }: { slug: string | null }) {
+  const [displaySlug, setDisplaySlug] = useState<string>(SIGNS[0].slug);
+
+  useEffect(() => {
+    if (slug) {
+      setDisplaySlug(slug);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setDisplaySlug((prev) => {
+        const currentIndex = SIGNS.findIndex((s) => s.slug === prev);
+        return SIGNS[(currentIndex + 1) % SIGNS.length].slug;
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [slug]);
+
+  const sign = SIGNS.find((s) => s.slug === displaySlug);
+  const teaser = HOROSCOPE_TEASERS[displaySlug];
+  if (!sign || !teaser) return null;
+
+  const colors = ELEMENT_COLORS[sign.element];
 
   return (
-    <div className="relative w-72 h-72 sm:w-96 sm:h-96 mx-auto" aria-hidden="true">
-      {/* Outer glow ring */}
-      <div className="absolute inset-0 rounded-full border border-celestial-400/20 animate-glow" />
-
-      {/* Middle ring */}
-      <div className="absolute inset-6 sm:inset-8 rounded-full border border-celestial-400/10" />
-
-      {/* Inner ring */}
-      <div className="absolute inset-16 sm:inset-20 rounded-full border border-nebula-500/10" />
-
-      {/* Center dot */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-3 h-3 rounded-full bg-stardust-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]" />
+    <div
+      className="w-full max-w-md mx-auto mt-5 text-center animate-in"
+      role="region"
+      aria-live="polite"
+      aria-label="Horoscope teaser"
+    >
+      <div className={`rounded-xl border p-4 ${colors.bg} ${colors.border} transition-all duration-300`}>
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span className={`text-lg ${colors.text}`}>{sign.symbol}</span>
+          <span className="text-sm font-semibold text-foreground">{sign.name}</span>
+        </div>
+        <p className="text-sm text-dust-300 leading-relaxed line-clamp-3">
+          {teaser}
+        </p>
+        <Link
+          href={`/horoscope/${displaySlug}`}
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-celestial-300 hover:text-celestial-200 transition-colors"
+        >
+          Read Full Horoscope
+          <ArrowRight size={14} />
+        </Link>
       </div>
-
-      {/* Spinning zodiac symbols - outer ring */}
-      <div className="absolute inset-0 zodiac-wheel">
-        {symbols.map((sym, i) => {
-          const angle = (i * 30 - 90) * (Math.PI / 180);
-          const radius = 45;
-          const x = 50 + radius * Math.cos(angle);
-          const y = 50 + radius * Math.sin(angle);
-          return (
-            <span
-              key={i}
-              className="absolute text-xl sm:text-2xl text-celestial-300/70 hover:text-stardust-400 transition-colors duration-300 select-none"
-              style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              {sym}
-            </span>
-          );
-        })}
-      </div>
-
-      {/* Counter-rotating inner symbols */}
-      <div
-        className="absolute inset-12 sm:inset-16"
-        style={{ animation: 'zodiac-spin 90s linear infinite reverse' }}
-      >
-        {symbols.filter((_, i) => i % 3 === 0).map((sym, i) => {
-          const angle = (i * 90 - 45) * (Math.PI / 180);
-          const radius = 40;
-          const x = 50 + radius * Math.cos(angle);
-          const y = 50 + radius * Math.sin(angle);
-          return (
-            <span
-              key={i}
-              className="absolute text-sm sm:text-base text-nebula-500/40 select-none"
-              style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              {sym}
-            </span>
-          );
-        })}
-      </div>
-
-      {/* Radial lines */}
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div
-          key={i}
-          className="absolute top-1/2 left-1/2 h-px origin-left bg-gradient-to-r from-celestial-400/15 to-transparent"
-          style={{
-            width: '48%',
-            transform: `rotate(${i * 30}deg)`,
-          }}
-        />
-      ))}
     </div>
   );
 }
@@ -347,10 +371,14 @@ function FAQAccordion() {
 }
 
 /* ================================================================
-   MAIN PAGE COMPONENT
+   HOME PAGE CONTENT (uses useSearchParams for UTM routing)
    ================================================================ */
 
-export default function HomePage() {
+function HomePageContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [selectedSign, setSelectedSign] = useState<string | null>(null);
+
   const today = new Date();
   const dateString = today.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -358,6 +386,28 @@ export default function HomePage() {
     month: 'long',
     day: 'numeric',
   });
+
+  /* UTM-aware landing: redirect ad traffic to the right page */
+  useEffect(() => {
+    const utmContent = searchParams.get('utm_content');
+    if (!utmContent) return;
+
+    switch (utmContent) {
+      case 'birth-chart':
+        router.replace('/birth-chart');
+        break;
+      case 'compatibility':
+        router.replace('/compatibility');
+        break;
+      case 'horoscope': {
+        const el = document.getElementById('daily-horoscope');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+        break;
+      }
+    }
+  }, [searchParams, router]);
 
   /* FAQ structured data for AEO / Answer Engine Optimisation */
   const faqSchema = {
@@ -387,7 +437,7 @@ export default function HomePage() {
         {/* ============================================
             SECTION 1 — HERO
             ============================================ */}
-        <section className="relative flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 pt-24 pb-16 overflow-hidden">
+        <section className="relative flex flex-col items-center justify-center min-h-[85vh] px-4 sm:px-6 lg:px-8 pt-20 pb-12 overflow-hidden">
           {/* Background radial accents */}
           <div
             className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] pointer-events-none"
@@ -406,37 +456,42 @@ export default function HomePage() {
             aria-hidden="true"
           />
 
-          {/* Zodiac Wheel */}
-          <div className="mb-8 sm:mb-12 animate-in">
-            <ZodiacWheel />
+          {/* Sign Picker */}
+          <div className="mb-4 animate-in w-full max-w-lg mx-auto">
+            <p className="text-dust-400 text-sm text-center mb-3 uppercase tracking-widest font-medium">
+              What&apos;s your sign?
+            </p>
+            <SignPicker selectedSlug={selectedSign} onSelect={setSelectedSign} />
           </div>
 
+          {/* Teaser Display */}
+          <HeroTeaser slug={selectedSign} />
+
           {/* Headline */}
-          <h1 className="gradient-text text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-center animate-in max-w-4xl">
-            Your Stars, Decoded.
+          <h1 className="gradient-text text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-center animate-in max-w-4xl mt-6">
+            What Do Your Stars Say Today?
           </h1>
 
           {/* Subheadline */}
-          <p className="mt-6 sm:mt-8 text-lg sm:text-xl md:text-2xl text-dust-300 text-center max-w-2xl leading-relaxed animate-in">
-            Professional-grade birth charts, AI-powered daily horoscopes, and
-            deep compatibility analysis — all in one place.
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl text-dust-300 text-center max-w-xl leading-relaxed animate-in">
+            Tap your sign for today&apos;s free horoscope, personalized birth chart, or compatibility reading.
           </p>
 
           {/* CTAs */}
-          <div className="mt-10 sm:mt-12 flex flex-col sm:flex-row gap-4 sm:gap-5 animate-in w-full sm:w-auto px-4 sm:px-0">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 animate-in w-full sm:w-auto px-4 sm:px-0">
             <Link
               href="/birth-chart"
-              className="btn-glow text-center text-base sm:text-lg px-8 py-4 rounded-xl"
+              className="btn-glow text-center text-sm sm:text-base px-6 py-3 rounded-xl"
             >
-              <Sparkles size={20} />
-              Get Your Free Birth Chart
+              <Sparkles size={18} />
+              Free Birth Chart
             </Link>
             <Link
-              href="/horoscope"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base sm:text-lg font-semibold text-celestial-200 border border-celestial-400/25 rounded-xl bg-celestial-400/5 hover:bg-celestial-400/10 hover:border-celestial-400/40 transition-all duration-300 hover:-translate-y-0.5"
+              href="/compatibility"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm sm:text-base font-semibold text-celestial-200 border border-celestial-400/25 rounded-xl bg-celestial-400/5 hover:bg-celestial-400/10 hover:border-celestial-400/40 transition-all duration-300 hover:-translate-y-0.5"
             >
-              <Sun size={20} />
-              Today&apos;s Horoscope
+              <Heart size={18} />
+              Check Compatibility
             </Link>
           </div>
 
@@ -453,7 +508,7 @@ export default function HomePage() {
         {/* ============================================
             SECTION 2 — DAILY HOROSCOPE PREVIEW
             ============================================ */}
-        <section className="px-4 sm:px-6 lg:px-8 py-20 sm:py-28 max-w-7xl mx-auto">
+        <section id="daily-horoscope" className="px-4 sm:px-6 lg:px-8 py-20 sm:py-28 max-w-7xl mx-auto">
           <div className="text-center mb-14 sm:mb-16">
             <p className="text-stardust-400 text-sm font-semibold uppercase tracking-widest mb-3">
               {dateString}
@@ -467,38 +522,42 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 stagger-children">
-            {ZODIAC_SIGNS.map((sign) => (
-              <Link
-                key={sign.slug}
-                href={`/horoscope/${sign.slug}`}
-                className="glass-card-hover group p-5 sm:p-6 flex flex-col items-center text-center"
-              >
-                {/* Symbol */}
-                <span className="text-4xl sm:text-5xl mb-3 group-hover:scale-110 transition-transform duration-300 block">
-                  {sign.symbol}
-                </span>
+            {SIGNS.map((sign) => {
+              const teaser = HOROSCOPE_TEASERS[sign.slug];
+              const ratings = HOROSCOPE_RATINGS[sign.slug];
+              return (
+                <Link
+                  key={sign.slug}
+                  href={`/horoscope/${sign.slug}`}
+                  className="glass-card-hover group p-5 sm:p-6 flex flex-col items-center text-center"
+                >
+                  {/* Symbol */}
+                  <span className="text-4xl sm:text-5xl mb-3 group-hover:scale-110 transition-transform duration-300 block">
+                    {sign.symbol}
+                  </span>
 
-                {/* Sign name & dates */}
-                <h3 className="text-base sm:text-lg font-bold text-foreground">
-                  {sign.name}
-                </h3>
-                <p className="text-xs text-dust-500 mt-0.5 mb-3">{sign.dates}</p>
+                  {/* Sign name & dates */}
+                  <h3 className="text-base sm:text-lg font-bold text-foreground">
+                    {sign.name}
+                  </h3>
+                  <p className="text-xs text-dust-500 mt-0.5 mb-3">{sign.dates}</p>
 
-                {/* Rating */}
-                <StarRating rating={sign.rating} size={12} />
+                  {/* Rating */}
+                  <StarRating rating={ratings?.overall ?? 3} size={12} />
 
-                {/* Teaser */}
-                <p className="text-sm text-dust-400 mt-3 leading-relaxed line-clamp-2">
-                  {sign.teaser}
-                </p>
+                  {/* Teaser */}
+                  <p className="text-sm text-dust-400 mt-3 leading-relaxed line-clamp-2">
+                    {teaser}
+                  </p>
 
-                {/* CTA */}
-                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-celestial-300 group-hover:text-celestial-200 transition-colors">
-                  View Full Horoscope
-                  <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-                </span>
-              </Link>
-            ))}
+                  {/* CTA */}
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-celestial-300 group-hover:text-celestial-200 transition-colors">
+                    View Full Horoscope
+                    <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
@@ -835,5 +894,17 @@ export default function HomePage() {
         </section>
       </main>
     </div>
+  );
+}
+
+/* ================================================================
+   PAGE WRAPPER (Suspense boundary for useSearchParams)
+   ================================================================ */
+
+export default function HomePage() {
+  return (
+    <Suspense>
+      <HomePageContent />
+    </Suspense>
   );
 }
