@@ -252,13 +252,110 @@ const recordSent = db.prepare(
   'INSERT OR IGNORE INTO email_sequence_log (user_id, email_key) VALUES (?, ?)',
 );
 
+// ---- Subscriber types & sequence ----
+
+interface Subscriber {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
+interface SubscriberEmail {
+  key: string;
+  delayDays: number;
+  subject: string;
+  html: (sub: Subscriber) => string;
+}
+
+function subscriberEmailFooter(subscriberId: string): string {
+  const token = Buffer.from(subscriberId).toString('base64url');
+  const apiUrl = process.env.API_URL ?? 'https://api.stellera.co';
+  return `
+    <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;" />
+    <p style="color: #999; font-size: 11px; text-align: center;">
+      Your stars, decoded. &mdash; Stellara<br />
+      <a href="${apiUrl}/email/unsubscribe-subscriber?token=${token}" style="color: #999;">Unsubscribe</a>
+    </p>
+  `;
+}
+
+function subscriberWrapper(content: string, subscriberId: string): string {
+  return `
+    <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
+      ${content}
+      ${subscriberEmailFooter(subscriberId)}
+    </div>
+  `;
+}
+
+const SUBSCRIBER_SEQUENCE: SubscriberEmail[] = [
+  // Day 3: Drive to site — daily horoscope
+  {
+    key: 'sub_nurture_1_horoscope',
+    delayDays: 3,
+    subject: 'Your daily horoscope is live — what do the stars say?',
+    html: (sub) => subscriberWrapper(`
+      <h1 style="color: #7c3aed;">Today&rsquo;s Cosmic Forecast Is Ready</h1>
+      <p>Hey there!</p>
+      <p>Your daily horoscope has been updated. Stellara covers all 12 signs with personalized insights for:</p>
+      <ul>
+        <li><strong>Overall energy</strong> &mdash; what the stars have in store today</li>
+        <li><strong>Love &amp; relationships</strong> &mdash; cosmic chemistry insights</li>
+        <li><strong>Career &amp; money</strong> &mdash; your professional outlook</li>
+        <li><strong>Wellness</strong> &mdash; mind, body, and spirit guidance</li>
+      </ul>
+      <p>Make it a morning ritual &mdash; check in with the stars over your coffee.</p>
+      ${ctaButton("Read Today's Horoscope", `${API_URL}/horoscope`)}
+    `, sub.id),
+  },
+
+  // Day 7: Convert to account — birth chart
+  {
+    key: 'sub_nurture_2_birth_chart',
+    delayDays: 7,
+    subject: 'Your cosmic blueprint — free birth chart inside',
+    html: (sub) => subscriberWrapper(`
+      <h1 style="color: #7c3aed;">Unlock Your Cosmic Blueprint</h1>
+      <p>Hey there!</p>
+      <p>Did you know your zodiac sign is just the beginning? Your birth chart maps every planet&rsquo;s position at the exact moment you were born &mdash; revealing your emotional world, how others see you, and so much more.</p>
+      <div style="background: #f8f5ff; border-radius: 12px; padding: 20px; margin: 16px 0;">
+        <p style="margin: 0 0 12px;"><strong style="color: #7c3aed;">&#9788; Sun Sign</strong> &mdash; Your core identity</p>
+        <p style="margin: 0 0 12px;"><strong style="color: #7c3aed;">&#9789; Moon Sign</strong> &mdash; Your emotional landscape</p>
+        <p style="margin: 0;"><strong style="color: #7c3aed;">&#8599; Rising Sign</strong> &mdash; How the world sees you</p>
+      </div>
+      <p>Create a free Stellara account and generate your birth chart in 30 seconds &mdash; all you need is your birth date, time, and location.</p>
+      ${ctaButton('Generate Your Free Birth Chart', `${API_URL}/birth-chart`)}
+    `, sub.id),
+  },
+
+  // Day 14: Re-engagement — compatibility
+  {
+    key: 'sub_nurture_3_compatibility',
+    delayDays: 14,
+    subject: 'Who are you cosmically compatible with?',
+    html: (sub) => subscriberWrapper(`
+      <h1 style="color: #7c3aed;">Cosmic Compatibility</h1>
+      <p>Hey there!</p>
+      <p>Ever wonder why you click with some people and clash with others? The stars might have the answer.</p>
+      <p>Stellara&rsquo;s compatibility tool analyzes the elemental and modal dynamics between any two zodiac signs &mdash; revealing where you click, where you clash, and how to make it work.</p>
+      <p>Try it with your partner, best friend, coworker, or anyone you&rsquo;re curious about.</p>
+      ${ctaButton('Check Your Compatibility', `${API_URL}/compatibility`)}
+      <p style="color: #666; font-size: 13px; margin-top: 24px;">For even deeper insights, create a free account and get your personalized birth chart included.</p>
+    `, sub.id),
+  },
+];
+
+const findSubSentEmails = db.prepare(
+  'SELECT email_key FROM subscriber_sequence_log WHERE subscriber_id = ?',
+);
+
+const recordSubSent = db.prepare(
+  'INSERT OR IGNORE INTO subscriber_sequence_log (subscriber_id, email_key) VALUES (?, ?)',
+);
+
 // ---- Main logic ----
 
-async function main() {
-  const now = new Date();
-  console.log(`[${now.toISOString()}] Nurture cron starting...`);
-
-  // Only process users from the last 15 days (max nurture window is 14 days)
+async function runUserNurture(now: Date): Promise<{ sent: number; skipped: number; errors: number }> {
   const users = db.prepare(`
     SELECT id, email, name, created_at,
            sun_sign, moon_sign, rising_sign,
@@ -269,42 +366,32 @@ async function main() {
     ORDER BY created_at ASC
   `).all() as User[];
 
-  console.log(`  Found ${users.length} users in nurture window`);
+  console.log(`  Found ${users.length} registered users in nurture window`);
 
-  let totalSent = 0;
-  let totalSkipped = 0;
-  let totalErrors = 0;
+  let sent = 0;
+  let skipped = 0;
+  let errors = 0;
 
   for (const user of users) {
-    // Skip unsubscribed users
-    if (user.email_unsubscribed) {
-      continue;
-    }
+    if (user.email_unsubscribed) continue;
 
-    // Get all emails already sent to this user
     const sentRows = findSentEmails.all(user.id) as { email_key: string }[];
     const sentKeys = new Set(sentRows.map((r) => r.email_key));
-
     const userCreated = new Date(user.created_at + 'Z');
 
     for (const email of SEQUENCE) {
-      // Already sent or skipped?
       if (sentKeys.has(email.key)) continue;
 
-      // Is it time? (user must be at least email.delayDays old)
       const sendAfter = new Date(userCreated.getTime() + email.delayDays * 24 * 60 * 60 * 1000);
       if (now < sendAfter) continue;
 
-      // Check conditions
       if (!email.shouldSend(user)) {
-        // Mark as sent so we don't re-check every hour
         recordSent.run(user.id, email.key);
-        totalSkipped++;
+        skipped++;
         console.log(`  [SKIP] ${email.key} -> ${user.email} (condition not met)`);
         continue;
       }
 
-      // Send the email
       try {
         const { data, error } = await resend.emails.send({
           from: FROM_EMAIL,
@@ -315,24 +402,96 @@ async function main() {
 
         if (error) {
           console.error(`  [FAIL] ${email.key} -> ${user.email}: ${JSON.stringify(error)}`);
-          totalErrors++;
-          // Do NOT record — retry next hour
+          errors++;
         } else {
           recordSent.run(user.id, email.key);
-          totalSent++;
+          sent++;
           console.log(`  [SENT] ${email.key} -> ${user.email} (${data?.id})`);
         }
       } catch (err) {
         console.error(`  [ERROR] ${email.key} -> ${user.email}:`, err);
-        totalErrors++;
+        errors++;
       }
 
-      // Rate-limit: 100ms between emails
       await new Promise((r) => setTimeout(r, 100));
     }
   }
 
-  console.log(`[${now.toISOString()}] Done. Sent: ${totalSent}, Skipped: ${totalSkipped}, Errors: ${totalErrors}`);
+  return { sent, skipped, errors };
+}
+
+async function runSubscriberNurture(now: Date): Promise<{ sent: number; skipped: number; errors: number }> {
+  // Get subscribers from the last 15 days who are NOT also registered users
+  const subscribers = db.prepare(`
+    SELECT s.id, s.email, s.created_at
+    FROM email_subscribers s
+    LEFT JOIN users u ON LOWER(s.email) = LOWER(u.email)
+    WHERE s.created_at >= datetime('now', '-15 days')
+      AND u.id IS NULL
+    ORDER BY s.created_at ASC
+  `).all() as Subscriber[];
+
+  console.log(`  Found ${subscribers.length} email-only subscribers in nurture window`);
+
+  let sent = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  for (const sub of subscribers) {
+    const sentRows = findSubSentEmails.all(sub.id) as { email_key: string }[];
+    const sentKeys = new Set(sentRows.map((r) => r.email_key));
+    const subCreated = new Date(sub.created_at + 'Z');
+
+    for (const email of SUBSCRIBER_SEQUENCE) {
+      if (sentKeys.has(email.key)) continue;
+
+      const sendAfter = new Date(subCreated.getTime() + email.delayDays * 24 * 60 * 60 * 1000);
+      if (now < sendAfter) continue;
+
+      try {
+        const { data, error } = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: sub.email,
+          subject: email.subject,
+          html: email.html(sub),
+        });
+
+        if (error) {
+          console.error(`  [FAIL] ${email.key} -> ${sub.email}: ${JSON.stringify(error)}`);
+          errors++;
+        } else {
+          recordSubSent.run(sub.id, email.key);
+          sent++;
+          console.log(`  [SENT] ${email.key} -> ${sub.email} (${data?.id})`);
+        }
+      } catch (err) {
+        console.error(`  [ERROR] ${email.key} -> ${sub.email}:`, err);
+        errors++;
+      }
+
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+
+  return { sent, skipped, errors };
+}
+
+async function main() {
+  const now = new Date();
+  console.log(`[${now.toISOString()}] Nurture cron starting...`);
+
+  // Run both nurture sequences
+  console.log('\n--- Registered User Nurture ---');
+  const userStats = await runUserNurture(now);
+
+  console.log('\n--- Email Subscriber Nurture ---');
+  const subStats = await runSubscriberNurture(now);
+
+  const totalSent = userStats.sent + subStats.sent;
+  const totalSkipped = userStats.skipped + subStats.skipped;
+  const totalErrors = userStats.errors + subStats.errors;
+
+  console.log(`\n[${now.toISOString()}] Done. Sent: ${totalSent}, Skipped: ${totalSkipped}, Errors: ${totalErrors}`);
 }
 
 main().catch((err) => {

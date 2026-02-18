@@ -92,4 +92,40 @@ router.get('/unsubscribe', (req, res) => {
   }
 });
 
+/* ----------------------------------------------------------------
+   GET /email/unsubscribe-subscriber?token=...
+   Token is base64-encoded subscriber ID — removes from email_subscribers
+   ---------------------------------------------------------------- */
+router.get('/unsubscribe-subscriber', (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== 'string') {
+      res.status(400).send('<h1>Invalid unsubscribe link</h1>');
+      return;
+    }
+
+    const subscriberId = Buffer.from(token, 'base64url').toString('utf-8');
+
+    const result = db.prepare('DELETE FROM email_subscribers WHERE id = ?').run(subscriberId);
+    if (result.changes === 0) {
+      res.status(404).send('<h1>Subscriber not found</h1>');
+      return;
+    }
+
+    res.send(`
+      <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 60px auto; text-align: center; color: #1a1a2e;">
+        <h1 style="color: #7c3aed;">Unsubscribed</h1>
+        <p>You&rsquo;ve been unsubscribed from Stellara emails.</p>
+        <p style="color: #666; font-size: 14px; margin-top: 24px;">
+          We&rsquo;re sorry to see you go. You can always re-subscribe at <a href="https://stellera.co" style="color: #7c3aed;">stellera.co</a>.
+        </p>
+      </div>
+    `);
+  } catch (err) {
+    console.error('Subscriber unsubscribe error:', err);
+    res.status(500).send('<h1>Something went wrong</h1>');
+  }
+});
+
 export default router;
