@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Sparkles,
@@ -897,7 +897,7 @@ const YEARS = Array.from({ length: CURRENT_YEAR - 1920 + 1 }, (_, i) => String(C
    ================================================================ */
 
 export default function BirthChartPage() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, isPremium } = useAuth();
 
   /* ----------- Form State ----------- */
   const [formData, setFormData] = useState({
@@ -912,6 +912,17 @@ export default function BirthChartPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [houseGuideOpen, setHouseGuideOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Track premium nudge impression for conversion analytics
+  useEffect(() => {
+    if (chartData && user && !isPremium) {
+      trackEvent('view_premium_nudge', {
+        location: 'birth_chart_results',
+        moon_sign: chartData.moonSign,
+        rising_sign: chartData.risingSign,
+      });
+    }
+  }, [chartData, user, isPremium]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -1343,6 +1354,45 @@ export default function BirthChartPage() {
             </div>
           </div>
         </div>
+
+        {/* Premium nudge — logged-in free users only */}
+        {user && !isPremium && chartData && (
+          <div className="mt-10 mx-auto max-w-2xl animate-in" style={{ animationDelay: '220ms' }}>
+            <div className="glass-card p-6 sm:p-8 border border-stardust-500/20 bg-gradient-to-r from-stardust-600/5 to-celestial-600/5">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Moon className="h-6 w-6 text-celestial-200" />
+                  <Crown className="h-6 w-6 text-stardust-400" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  Your {chartData.moonSign} Moon Reveals Your Emotional Inner World
+                </h3>
+                <p className="text-sm text-dust-400 mb-1 max-w-lg mx-auto">
+                  Your birth chart shows a{' '}
+                  <span className="text-celestial-200 font-medium">
+                    {ZODIAC_SYMBOLS[chartData.moonSign]} {chartData.moonSign} Moon
+                  </span>
+                  {' '}and{' '}
+                  <span className="text-nebula-300 font-medium">
+                    {ZODIAC_SYMBOLS[chartData.risingSign]} {chartData.risingSign} Rising
+                  </span>.
+                </p>
+                <p className="text-sm text-dust-400 mb-5 max-w-lg mx-auto">
+                  Unlock daily Moon &amp; Rising horoscopes, your complete chart analysis,
+                  and personalized transit alerts.
+                </p>
+                <Link
+                  href="/pricing"
+                  className="btn-glow inline-flex items-center gap-2 px-6 py-3 text-sm"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Start Your 7-Day Free Trial
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Signup nudge — only for non-logged-in users */}
         {!user && (
