@@ -5,7 +5,7 @@
  * generates witty replies using Claude, and posts them.
  *
  * Safety guards:
- * - Max 10 replies per run, 40/day cap
+ * - Max 8 replies + 3 QTs per run, 50/day cap
  * - Never replies to the same tweet twice (reply_log table)
  * - Never replies to the same author twice per day
  * - Skips own tweets
@@ -13,16 +13,16 @@
  * - Min 1 like on tweet to engage (catch fresh tweets early)
  * - Requires Twitter Basic tier ($100/mo) for search API
  *
- * Crontab entry (5x daily):
- *   15 8,11,14,17,20 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
+ * Crontab entry (7x daily, every 2 hours from 8am-8pm):
+ *   15 8,10,12,14,16,18,20 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import db from '../db.js';
 import { searchRecentTweets, replyToTweet, quoteTweet, type SearchedTweet } from './twitter.js';
 
-const MAX_REPLIES_PER_RUN = 10;
-const QUOTE_TWEETS_PER_RUN = 2;   // Top-engagement tweets get QT'd (visible on our timeline)
+const MAX_REPLIES_PER_RUN = 8;
+const QUOTE_TWEETS_PER_RUN = 3;   // Top-engagement tweets get QT'd (visible on our timeline)
 const REPLY_DELAY_MS = 15_000;
 const MIN_LIKES_FOR_QT = 10;      // Only QT tweets with decent engagement
 
@@ -118,7 +118,7 @@ async function main() {
 
   // Check daily reply budget
   const { count: todayCount } = todayReplyCount.get() as { count: number };
-  if (todayCount >= 40) {
+  if (todayCount >= 50) {
     console.log(`  Already sent ${todayCount} replies today — daily limit reached`);
     return;
   }
@@ -126,8 +126,8 @@ async function main() {
   // Get our own Twitter user ID to avoid replying to ourselves
   const ownUsername = (process.env.TWITTER_USERNAME ?? 'stelleraapp').toLowerCase();
 
-  // Run 2 different queries per session for a wider candidate pool
-  const QUERIES_PER_RUN = 2;
+  // Run 3 different queries per session for a wider candidate pool
+  const QUERIES_PER_RUN = 3;
   const baseIndex = (now.getHours() * 2 + Math.floor(now.getMinutes() / 30)) % SEARCH_QUERIES.length;
 
   const tweets: SearchedTweet[] = [];
