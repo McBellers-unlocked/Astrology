@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useDailyHoroscope } from '@/hooks/use-daily-horoscope';
+import PremiumGate from '@/components/PremiumGate';
 
 const ZODIAC_SYMBOLS: Record<string, string> = {
   aries: '\u2648', taurus: '\u2649', gemini: '\u264A', cancer: '\u264B',
@@ -102,6 +103,57 @@ function HoroscopePreview({ sign }: { sign: string }) {
         Read full horoscope
         <ArrowRight className="h-3.5 w-3.5" />
       </Link>
+    </div>
+  );
+}
+
+function LockedHoroscopeTeaser({
+  sunSign,
+  label,
+  signName,
+  icon: Icon,
+  iconColor,
+  readingKey,
+}: {
+  sunSign: string;
+  label: string;
+  signName: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: string;
+  readingKey: 'moonReading' | 'risingReading';
+}) {
+  const horoscope = useDailyHoroscope(sunSign);
+
+  if (!horoscope) {
+    return (
+      <div className="glass-card p-5 flex items-center justify-center min-h-[120px]">
+        <Loader2 className="h-5 w-5 animate-spin text-celestial-300" />
+      </div>
+    );
+  }
+
+  const reading = horoscope[readingKey];
+  const preview = reading[0]?.split('.').slice(0, 2).join('.') + '...' || '';
+
+  return (
+    <div className="glass-card p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className={`h-5 w-5 ${iconColor}`} />
+        <h3 className="text-base font-semibold text-foreground">
+          {capitalize(signName)} {label}
+        </h3>
+      </div>
+      <PremiumGate
+        requiredTier="stellar"
+        previewText={preview}
+        featureName={`your ${capitalize(signName)} ${label}`}
+      >
+        <div className="space-y-3">
+          {reading.map((p, i) => (
+            <p key={i} className="text-sm leading-relaxed text-dust-300">{p}</p>
+          ))}
+        </div>
+      </PremiumGate>
     </div>
   );
 }
@@ -212,6 +264,32 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Moon & Rising Locked Teasers (free users only) */}
+        {hasBirthData && !isPremium && (
+          <div className="mb-8 space-y-4">
+            <h2 className="text-sm uppercase tracking-widest text-dust-400 flex items-center gap-2">
+              <Crown className="h-4 w-4 text-stardust-400" />
+              Premium Daily Readings
+            </h2>
+            <LockedHoroscopeTeaser
+              sunSign={sunSign}
+              label="Moon Reading"
+              signName={moonSign}
+              icon={Moon}
+              iconColor="text-celestial-200"
+              readingKey="moonReading"
+            />
+            <LockedHoroscopeTeaser
+              sunSign={sunSign}
+              label="Rising Reading"
+              signName={risingSign}
+              icon={CircleDot}
+              iconColor="text-nebula-400"
+              readingKey="risingReading"
+            />
+          </div>
+        )}
+
         {/* Premium Upsell (for free users) */}
         {!isPremium && (
           <div className="mb-8 glass-card p-6 border border-stardust-500/20 bg-gradient-to-r from-stardust-600/5 to-celestial-600/5">
@@ -222,7 +300,21 @@ export default function DashboardPage() {
                   Unlock Your Full Cosmic Profile
                 </h3>
                 <p className="text-sm text-dust-400">
-                  Get Moon &amp; Rising sign horoscopes, full birth chart analysis, detailed compatibility reports, and monthly transit alerts.
+                  {hasBirthData ? (
+                    <>
+                      Unlock your{' '}
+                      <span className="text-celestial-200 font-medium">
+                        {ZODIAC_SYMBOLS[moonSign]} {capitalize(moonSign)} Moon
+                      </span>
+                      {' & '}
+                      <span className="text-nebula-300 font-medium">
+                        {ZODIAC_SYMBOLS[risingSign]} {capitalize(risingSign)} Rising
+                      </span>
+                      {' '}horoscopes, full birth chart analysis, detailed compatibility reports, and monthly transit alerts.
+                    </>
+                  ) : (
+                    'Get Moon & Rising sign horoscopes, full birth chart analysis, detailed compatibility reports, and monthly transit alerts.'
+                  )}
                 </p>
               </div>
               <Link
