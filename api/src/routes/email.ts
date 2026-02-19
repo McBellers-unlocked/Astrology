@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import db from '../db.js';
 import resend, { FROM_EMAIL } from '../lib/resend.js';
+import { subscriberEmailHtml, ctaButton } from '../email/template.js';
 
 const router = Router();
 
@@ -24,26 +25,24 @@ router.post('/subscribe', async (req, res) => {
     ).run(id, email.toLowerCase().trim(), source ?? 'unknown');
 
     // Send newsletter welcome via Resend (non-blocking)
+    const frontendUrl = process.env.FRONTEND_URL || 'https://stellera.co';
     resend.emails
       .send({
         from: FROM_EMAIL,
         to: email,
-        subject: "You're in! Your daily horoscope starts tomorrow",
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
-            <h1 style="color: #7c3aed;">Welcome, stargazer!</h1>
-            <p>You&rsquo;re now subscribed to Stellara&rsquo;s cosmic updates. Here&rsquo;s what to expect:</p>
-            <ul>
-              <li>Daily horoscope insights in your inbox</li>
-              <li>Major transit alerts (Mercury retrograde, full moons, eclipses)</li>
-              <li>Weekly cosmic energy forecasts</li>
-            </ul>
-            <p style="margin-top: 24px;">
-              <a href="https://stellera.co/horoscope" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Read Today&rsquo;s Horoscope</a>
-            </p>
-            <p style="color: #666; font-size: 13px; margin-top: 32px;">Your stars, decoded. &mdash; Stellara</p>
-          </div>
-        `,
+        subject: "You're in! Your cosmic updates start now",
+        html: subscriberEmailHtml(`
+          <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Welcome, Stargazer!</h1>
+          <p>You&rsquo;re now part of the Stellara community. Here&rsquo;s what&rsquo;s coming to your inbox:</p>
+          <ul style="padding-left:20px;color:#1a1a2e;">
+            <li style="margin-bottom:8px;"><strong>Daily horoscope insights</strong> for all 12 signs</li>
+            <li style="margin-bottom:8px;"><strong>Major transit alerts</strong> &mdash; Mercury retrograde, full moons, eclipses</li>
+            <li style="margin-bottom:8px;"><strong>Weekly cosmic energy forecasts</strong></li>
+          </ul>
+          <p>Your first update is already waiting &mdash; read today&rsquo;s horoscope now.</p>
+          ${ctaButton("Read Today's Horoscope", `${frontendUrl}/horoscope`)}
+          <p style="color:#666;font-size:13px;margin-top:20px;">Want personalized readings? <a href="${frontendUrl}/signup" style="color:#7C3AED;text-decoration:underline;">Create a free account</a> to unlock your birth chart and Big Three.</p>
+        `, id, 'Daily horoscopes, transit alerts, and weekly forecasts delivered to your inbox'),
       })
       .catch((err) => console.error('Newsletter welcome email failed:', err));
 

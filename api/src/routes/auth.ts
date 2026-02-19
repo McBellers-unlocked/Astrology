@@ -5,6 +5,7 @@ import db from '../db.js';
 import { signToken } from '../lib/jwt.js';
 import { requireAuth } from '../middleware/auth.js';
 import resend, { FROM_EMAIL } from '../lib/resend.js';
+import { userEmailHtml, transactionalEmailHtml, ctaButton } from '../email/template.js';
 
 const router = Router();
 
@@ -42,27 +43,40 @@ router.post('/signup', async (req, res) => {
     const token = signToken({ userId: id, email: email.toLowerCase().trim() });
 
     // Send welcome email via Resend (non-blocking IIFE with proper error checking)
+    const frontendBase = process.env.FRONTEND_URL || 'https://stellera.co';
     (async () => {
       try {
         const { data, error } = await resend.emails.send({
           from: FROM_EMAIL,
           to: email,
-          subject: 'Welcome to Stellara — your cosmic journey begins',
-          html: `
-            <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
-              <h1 style="color: #7c3aed;">Welcome to Stellara, ${name}!</h1>
-              <p>Your cosmic journey begins now. Here&rsquo;s what you can do:</p>
-              <ul>
-                <li><strong>Generate your birth chart</strong> &mdash; discover your Big Three (Sun, Moon &amp; Rising)</li>
-                <li><strong>Read your daily horoscope</strong> &mdash; updated every morning</li>
-                <li><strong>Check compatibility</strong> &mdash; explore chemistry with any sign</li>
-              </ul>
-              <p style="margin-top: 24px;">
-                <a href="https://stellera.co/birth-chart" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get Your Free Birth Chart</a>
-              </p>
-              <p style="color: #666; font-size: 13px; margin-top: 32px;">Your stars, decoded. &mdash; Stellara</p>
-            </div>
-          `,
+          subject: `Welcome to Stellara, ${name} \u2014 your cosmic journey begins`,
+          html: userEmailHtml(`
+            <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Welcome to Stellara!</h1>
+            <p>Hi ${name}, your cosmic journey starts now. Here are three things you can do right away:</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
+              <tr>
+                <td style="padding:12px 0;border-bottom:1px solid #ede9fe;">
+                  <strong style="color:#7C3AED;">&#9788; Map your birth chart</strong><br />
+                  <span style="color:#666;font-size:14px;">Discover your Big Three (Sun, Moon &amp; Rising) in 30 seconds</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:12px 0;border-bottom:1px solid #ede9fe;">
+                  <strong style="color:#7C3AED;">&#9734; Read your daily horoscope</strong><br />
+                  <span style="color:#666;font-size:14px;">Updated every morning with love, career, and wellness insights</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:12px 0;">
+                  <strong style="color:#7C3AED;">&#10084; Check your compatibility</strong><br />
+                  <span style="color:#666;font-size:14px;">Explore the cosmic chemistry between any two signs</span>
+                </td>
+              </tr>
+            </table>
+            <p>Start with your birth chart &mdash; it&rsquo;s the foundation of everything else.</p>
+            ${ctaButton('Map Your Birth Chart', `${frontendBase}/birth-chart`)}
+            <p style="color:#666;font-size:13px;margin-top:20px;">Join over 14,000 stargazers who&rsquo;ve mapped their cosmic blueprint.</p>
+          `, id, 'Your birth chart, daily horoscope, and compatibility tools are ready'),
         });
         if (error) {
           console.error('Welcome email Resend error:', JSON.stringify(error));
@@ -252,20 +266,13 @@ router.post('/forgot-password', async (req, res) => {
         from: FROM_EMAIL,
         to: email,
         subject: 'Reset your Stellara password',
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
-            <h1 style="color: #7c3aed;">Reset Your Password</h1>
-            <p>Hi ${user.name},</p>
-            <p>We received a request to reset your password. Click the button below to choose a new one:</p>
-            <p style="margin-top: 24px;">
-              <a href="${resetUrl}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Reset Password</a>
-            </p>
-            <p style="color: #666; font-size: 13px; margin-top: 32px;">
-              This link expires in 1 hour. If you didn&rsquo;t request a password reset, you can safely ignore this email.
-            </p>
-            <p style="color: #666; font-size: 13px;">Your stars, decoded. &mdash; Stellara</p>
-          </div>
-        `,
+        html: transactionalEmailHtml(`
+          <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Reset Your Password</h1>
+          <p>Hi ${user.name},</p>
+          <p>We received a request to reset your Stellara password. Click the button below to choose a new one:</p>
+          ${ctaButton('Reset My Password', resetUrl)}
+          <p style="color:#666;font-size:13px;margin-top:24px;">This link expires in 1 hour. If you didn&rsquo;t request a password reset, you can safely ignore this email &mdash; your account is secure.</p>
+        `, 'Click the button below to set a new password'),
       })
       .catch((err) => console.error('Reset email failed:', err));
 

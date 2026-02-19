@@ -11,6 +11,14 @@
 
 import db from '../db.js';
 import resend, { FROM_EMAIL } from '../lib/resend.js';
+import {
+  userEmailHtml,
+  subscriberEmailHtml,
+  ctaButton,
+  infoBox,
+  goldDivider,
+  socialProofBlock,
+} from './template.js';
 
 // ---- Types ----
 
@@ -51,39 +59,6 @@ function isPremium(user: User): boolean {
 
 const API_URL = process.env.FRONTEND_URL ?? 'https://stellera.co';
 
-function unsubscribeUrl(userId: string): string {
-  const token = Buffer.from(userId).toString('base64url');
-  const apiUrl = process.env.API_URL ?? 'https://api.stellera.co';
-  return `${apiUrl}/email/unsubscribe?token=${token}`;
-}
-
-function emailFooter(userId: string): string {
-  return `
-    <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;" />
-    <p style="color: #999; font-size: 11px; text-align: center;">
-      Your stars, decoded. &mdash; Stellara<br />
-      <a href="${unsubscribeUrl(userId)}" style="color: #999;">Unsubscribe</a>
-    </p>
-  `;
-}
-
-function emailWrapper(content: string, userId: string): string {
-  return `
-    <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
-      ${content}
-      ${emailFooter(userId)}
-    </div>
-  `;
-}
-
-function ctaButton(text: string, href: string): string {
-  return `
-    <p style="margin-top: 24px;">
-      <a href="${href}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">${text}</a>
-    </p>
-  `;
-}
-
 // ---- The 7-email nurture sequence ----
 
 const SEQUENCE: NurtureEmail[] = [
@@ -92,15 +67,21 @@ const SEQUENCE: NurtureEmail[] = [
     key: 'nurture_1_birth_chart',
     delayDays: 1,
     shouldSend: (user) => !user.sun_sign,
-    subject: (user) => `Your birth chart is waiting, ${user.name}`,
-    html: (user) => emailWrapper(`
-      <h1 style="color: #7c3aed;">Your Cosmic Blueprint Awaits</h1>
+    subject: (user) => `Your cosmic blueprint is ready, ${user.name}`,
+    html: (user) => userEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">The Stars Aligned for You</h1>
       <p>Hi ${user.name},</p>
-      <p>Did you know your birth chart reveals far more than just your Sun sign? It maps the exact position of every planet at the moment you were born &mdash; your cosmic fingerprint.</p>
-      <p>It takes just 30 seconds to generate yours. All you need is your birth date, time, and location.</p>
-      ${ctaButton('Generate Your Birth Chart', `${API_URL}/birth-chart`)}
-      <p style="color: #666; font-size: 13px; margin-top: 24px;">Your Sun sign is just the beginning. Your Moon and Rising signs reveal your emotional world and how others see you.</p>
-    `, user.id),
+      <p>The stars aligned in a unique pattern the moment you were born &mdash; a cosmic fingerprint that belongs to no one else. Your birth chart maps the exact position of every planet at that moment, revealing who you truly are beneath the surface.</p>
+      <p>Here&rsquo;s the thing most people don&rsquo;t realize: <strong>your Sun sign is only about a third of the picture.</strong></p>
+      ${infoBox(`
+        <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9788; Sun Sign</strong> &mdash; Your core identity and life path</p>
+        <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9789; Moon Sign</strong> &mdash; Your emotional world and deepest needs</p>
+        <p style="margin:0;"><strong style="color:#7C3AED;">&#8599; Rising Sign</strong> &mdash; The mask you wear and how others perceive you</p>
+      `)}
+      <p>It takes just 30 seconds. All you need is your birth date, time, and location.</p>
+      ${ctaButton('Map Your Birth Chart', `${API_URL}/birth-chart`)}
+      <p style="color:#666;font-size:13px;margin-top:20px;">Over 14,000 stargazers have already discovered their cosmic blueprint.</p>
+    `, user.id, 'It takes 30 seconds to map the stars at your birth'),
   },
 
   // Day 3: Engagement — explain their Big Three (or nudge again)
@@ -109,27 +90,35 @@ const SEQUENCE: NurtureEmail[] = [
     delayDays: 3,
     shouldSend: () => true,
     subject: (user) => hasBigThree(user)
-      ? `${capitalize(user.sun_sign!)} Sun, ${capitalize(user.moon_sign!)} Moon, ${capitalize(user.rising_sign!)} Rising — here's what it means`
-      : `Discover your cosmic identity, ${user.name}`,
+      ? `${capitalize(user.sun_sign!)} Sun, ${capitalize(user.moon_sign!)} Moon, ${capitalize(user.rising_sign!)} Rising \u2014 what your Big Three reveal`
+      : `The 3 placements that define you, ${user.name}`,
     html: (user) => hasBigThree(user)
-      ? emailWrapper(`
-        <h1 style="color: #7c3aed;">Your Big Three, Explained</h1>
-        <p>Hi ${user.name}, here&rsquo;s what your placements reveal:</p>
-        <div style="background: #f8f5ff; border-radius: 12px; padding: 20px; margin: 16px 0;">
-          <p style="margin: 0 0 12px;"><strong style="color: #7c3aed;">&#9788; ${capitalize(user.sun_sign!)} Sun</strong> &mdash; Your core identity. This is who you are at your essence &mdash; your ego, your vitality, and the traits you grow into throughout your life.</p>
-          <p style="margin: 0 0 12px;"><strong style="color: #7c3aed;">&#9789; ${capitalize(user.moon_sign!)} Moon</strong> &mdash; Your emotional world. This governs how you feel, what you need for security, and how you process your deepest emotions.</p>
-          <p style="margin: 0;"><strong style="color: #7c3aed;">&#8599; ${capitalize(user.rising_sign!)} Rising</strong> &mdash; Your outer self. This is the mask you wear, your first impression, and how the world perceives you.</p>
-        </div>
-        <p>Together, these three placements paint a far richer picture than your Sun sign alone.</p>
-        ${ctaButton('View Your Full Chart', `${API_URL}/dashboard`)}
-      `, user.id)
-      : emailWrapper(`
-        <h1 style="color: #7c3aed;">Your Cosmic Identity Is Waiting</h1>
+      ? userEmailHtml(`
+        <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Your Big Three, Decoded</h1>
         <p>Hi ${user.name},</p>
-        <p>Everyone knows their Sun sign &mdash; but your <strong>Moon sign</strong> reveals your emotional core, and your <strong>Rising sign</strong> shapes how the world sees you.</p>
-        <p>Together, your Big Three form your cosmic identity. Generate your birth chart to discover yours:</p>
-        ${ctaButton('Generate Your Birth Chart', `${API_URL}/birth-chart`)}
-      `, user.id),
+        <p>Your particular combination of <strong>${capitalize(user.sun_sign!)} Sun</strong>, <strong>${capitalize(user.moon_sign!)} Moon</strong>, and <strong>${capitalize(user.rising_sign!)} Rising</strong> is rare and revealing. Here&rsquo;s what each placement says about you:</p>
+        ${infoBox(`
+          <p style="margin:0 0 14px;"><strong style="color:#7C3AED;">&#9788; ${capitalize(user.sun_sign!)} Sun</strong> &mdash; Your core identity. This is who you are at your essence &mdash; your ego, vitality, and the traits you grow into throughout your life. ${capitalize(user.sun_sign!)} energy shapes your fundamental approach to the world.</p>
+          <p style="margin:0 0 14px;"><strong style="color:#7C3AED;">&#9789; ${capitalize(user.moon_sign!)} Moon</strong> &mdash; Your emotional world. This governs how you feel, what you need for security, and how you process your deepest emotions. Your ${capitalize(user.moon_sign!)} Moon is why you react the way you do when things get intense.</p>
+          <p style="margin:0;"><strong style="color:#7C3AED;">&#8599; ${capitalize(user.rising_sign!)} Rising</strong> &mdash; Your outer self. This is your first impression, your social mask, and the lens through which opportunities find you. People meet your ${capitalize(user.rising_sign!)} Rising before they meet your Sun.</p>
+        `)}
+        <p>This is what professional astrologers read first. Your full chart goes even deeper &mdash; with planetary aspects, house placements, and transit patterns that paint the complete picture.</p>
+        ${ctaButton('Explore Your Full Chart', `${API_URL}/dashboard`)}
+      `, user.id, 'Your cosmic identity decoded in 60 seconds')
+      : userEmailHtml(`
+        <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">There&rsquo;s More to You Than Your Zodiac Sign</h1>
+        <p>Hi ${user.name},</p>
+        <p>Most people know their Sun sign. Few know the two other placements that matter just as much &mdash; and in some ways, even more.</p>
+        ${infoBox(`
+          <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9788; Sun Sign</strong> &mdash; Your core identity and life path (the one everyone knows)</p>
+          <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9789; Moon Sign</strong> &mdash; Why you react the way you do emotionally</p>
+          <p style="margin:0;"><strong style="color:#7C3AED;">&#8599; Rising Sign</strong> &mdash; How others perceive you before they really know you</p>
+        `)}
+        <p>Together, these three placements form your <strong>Big Three</strong> &mdash; the foundation of your cosmic identity. Knowing them changes how you read your horoscope, understand your relationships, and navigate your life.</p>
+        <p>Generate your birth chart to discover yours. It takes 30 seconds.</p>
+        ${ctaButton('Discover Your Big Three', `${API_URL}/birth-chart`)}
+        <p style="color:#666;font-size:13px;margin-top:20px;">Over 14,000 people have already discovered their Big Three with Stellara.</p>
+      `, user.id, 'Your Sun sign is just the beginning'),
   },
 
   // Day 5: Engagement — establish the daily horoscope habit
@@ -138,24 +127,25 @@ const SEQUENCE: NurtureEmail[] = [
     delayDays: 5,
     shouldSend: () => true,
     subject: (user) => user.sun_sign
-      ? `Your ${capitalize(user.sun_sign)} horoscope is live today`
-      : 'Your daily horoscope is ready',
+      ? `${capitalize(user.sun_sign)}, today the stars say...`
+      : 'Your daily cosmic forecast is live',
     html: (user) => {
       const signPath = user.sun_sign ? `/horoscope/${user.sun_sign}` : '/horoscope';
       const signName = user.sun_sign ? capitalize(user.sun_sign) : 'your sign';
-      return emailWrapper(`
-        <h1 style="color: #7c3aed;">Today&rsquo;s Cosmic Forecast</h1>
+      return userEmailHtml(`
+        <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Today&rsquo;s Cosmic Forecast</h1>
         <p>Hi ${user.name},</p>
-        <p>Your daily ${signName} horoscope has been updated this morning. It covers:</p>
-        <ul>
-          <li><strong>Overall energy</strong> &mdash; what the stars have in store today</li>
-          <li><strong>Love &amp; relationships</strong> &mdash; cosmic chemistry insights</li>
-          <li><strong>Career &amp; money</strong> &mdash; your professional outlook</li>
-          <li><strong>Wellness</strong> &mdash; mind, body, and spirit guidance</li>
-        </ul>
-        <p>Make it a morning ritual &mdash; check in with the stars over your coffee.</p>
-        ${ctaButton("Read Today's Horoscope", `${API_URL}${signPath}`)}
-      `, user.id);
+        <p>Every day, the planets shift &mdash; and so does the energy around you. Your ${signName} horoscope has been updated with today&rsquo;s cosmic weather.</p>
+        ${infoBox(`
+          <p style="margin:0 0 8px;"><strong>&#9734; Overall energy</strong> &mdash; what the stars have in store today</p>
+          <p style="margin:0 0 8px;"><strong>&#10084; Love &amp; relationships</strong> &mdash; cosmic chemistry insights</p>
+          <p style="margin:0 0 8px;"><strong>&#9733; Career &amp; money</strong> &mdash; your professional outlook</p>
+          <p style="margin:0;"><strong>&#10023; Wellness</strong> &mdash; mind, body, and spirit guidance</p>
+        `)}
+        <p>Think of it as your cosmic weather forecast &mdash; a 2-minute morning ritual that helps you align with the day&rsquo;s energy before you step out the door.</p>
+        ${ctaButton("Read Today's Forecast", `${API_URL}${signPath}`)}
+        <p style="color:#666;font-size:13px;margin-top:20px;">Thousands of Stellara readers check their horoscope before their first cup of coffee.</p>
+      `, user.id, `Love, career, wellness \u2014 what the stars have in store today`);
     },
   },
 
@@ -164,19 +154,25 @@ const SEQUENCE: NurtureEmail[] = [
     key: 'nurture_4_compatibility',
     delayDays: 7,
     shouldSend: () => true,
-    subject: (user) => `Who are you most compatible with, ${user.name}?`,
+    subject: (user) => `The cosmic chemistry between you and...anyone, ${user.name}`,
     html: (user) => {
       const compatIntro = user.sun_sign
-        ? `As a ${capitalize(user.sun_sign)}, you have natural chemistry with some signs and cosmic tension with others.`
-        : 'Every zodiac sign has natural allies and challenging matches.';
-      return emailWrapper(`
-        <h1 style="color: #7c3aed;">Cosmic Compatibility</h1>
+        ? `As a ${capitalize(user.sun_sign)}, you have natural fire with some signs and fascinating tension with others. The elements (fire, earth, air, water) and modes (cardinal, fixed, mutable) between your signs create a unique chemistry.`
+        : 'Every zodiac pairing has its own unique chemistry. The elements and modes between two signs create patterns of attraction, friction, and growth.';
+      return userEmailHtml(`
+        <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Cosmic Chemistry</h1>
         <p>Hi ${user.name},</p>
+        <p>Ever met someone and felt instant chemistry? Or immediate friction with no logical explanation? The stars might have the answer.</p>
         <p>${compatIntro}</p>
-        <p>Our compatibility tool analyzes the elemental and modal dynamics between any two signs &mdash; revealing where you click, where you clash, and how to make it work.</p>
-        <p>Try it with your partner, best friend, boss, or anyone you&rsquo;re curious about.</p>
+        <p>Stellara&rsquo;s compatibility tool breaks down any two signs &mdash; revealing where you click, where you clash, and how to make it work. Try it with:</p>
+        <ul style="padding-left:20px;color:#1a1a2e;">
+          <li style="margin-bottom:6px;">Your partner or crush</li>
+          <li style="margin-bottom:6px;">Your best friend</li>
+          <li style="margin-bottom:6px;">Your boss or coworker</li>
+          <li style="margin-bottom:6px;">Your parent or sibling</li>
+        </ul>
         ${ctaButton('Check Your Compatibility', `${API_URL}/compatibility`)}
-      `, user.id);
+      `, user.id, 'Why you click with some people and clash with others');
     },
   },
 
@@ -185,19 +181,21 @@ const SEQUENCE: NurtureEmail[] = [
     key: 'nurture_5_moon_rising_tease',
     delayDays: 9,
     shouldSend: (user) => !isPremium(user),
-    subject: () => "You're only reading 1/3 of your horoscope",
-    html: (user) => emailWrapper(`
-      <h1 style="color: #7c3aed;">There&rsquo;s More to Your Horoscope</h1>
+    subject: (user) => `You're only reading 1/3 of your horoscope, ${user.name}`,
+    html: (user) => userEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">What If You Could Read the Other Two-Thirds?</h1>
       <p>Hi ${user.name},</p>
-      <p>Your Sun sign horoscope? That&rsquo;s just the surface &mdash; about a third of the picture.</p>
-      <div style="background: #f8f5ff; border-radius: 12px; padding: 20px; margin: 16px 0;">
-        <p style="margin: 0 0 8px;"><strong>&#9788; Sun horoscope</strong> &mdash; Your public life and identity <span style="color: #22c55e;">&#10003; Free</span></p>
-        <p style="margin: 0 0 8px;"><strong>&#9789; Moon horoscope</strong> &mdash; Your emotional landscape and inner needs <span style="color: #7c3aed;">&#9733; Premium</span></p>
-        <p style="margin: 0;"><strong>&#8599; Rising horoscope</strong> &mdash; How opportunities and challenges appear to you <span style="color: #7c3aed;">&#9733; Premium</span></p>
-      </div>
-      <p>Astrologers recommend reading all three for the most accurate daily guidance. Stellara Premium unlocks your complete picture.</p>
-      ${ctaButton('Unlock Full Readings', `${API_URL}/pricing`)}
-    `, user.id),
+      <p>Your daily Sun sign horoscope captures your core energy. But here&rsquo;s something professional astrologers know: <strong>a Sun sign reading is only about a third of the picture.</strong></p>
+      ${infoBox(`
+        <p style="margin:0 0 10px;"><strong>&#9788; Sun horoscope</strong> &mdash; Your public life and identity <span style="color:#22c55e;font-weight:600;">&#10003; Free</span></p>
+        <p style="margin:0 0 10px;"><strong>&#9789; Moon horoscope</strong> &mdash; Your emotional needs and inner world <span style="color:#7C3AED;font-weight:600;">&#9733; Premium</span></p>
+        <p style="margin:0;"><strong>&#8599; Rising horoscope</strong> &mdash; How opportunities and challenges reach you <span style="color:#7C3AED;font-weight:600;">&#9733; Premium</span></p>
+      `)}
+      <p>Every professional astrologer reads all three. The Moon horoscope alone explains why some days <em>feel</em> off even when nothing external has changed. The Rising horoscope reveals the lens through which the day&rsquo;s events actually reach you.</p>
+      ${goldDivider()}
+      ${socialProofBlock('Reading all three horoscopes changed my entire morning routine. The Moon reading especially \u2014 it explains so much about my emotional patterns that my Sun sign alone never captured.', 'Stellara Premium member')}
+      ${ctaButton('Unlock Your Full Reading', `${API_URL}/pricing`, { variant: 'gold' })}
+    `, user.id, 'Your Moon and Rising horoscopes tell the rest of the story'),
   },
 
   // Day 12: Conversion — free trial CTA
@@ -205,40 +203,41 @@ const SEQUENCE: NurtureEmail[] = [
     key: 'nurture_6_trial_offer',
     delayDays: 12,
     shouldSend: (user) => !isPremium(user),
-    subject: () => '7 days free — unlock your full cosmic profile',
-    html: (user) => emailWrapper(`
-      <h1 style="color: #7c3aed;">Try Stellara Premium Free for 7 Days</h1>
+    subject: () => '7 days free: your complete cosmic profile awaits',
+    html: (user) => userEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Experience Everything Stellara Has to Offer</h1>
       <p>Hi ${user.name},</p>
-      <p>We&rsquo;d love for you to experience the full depth of Stellara. Start a free 7-day trial and get:</p>
-      <ul>
-        <li><strong>Moon &amp; Rising horoscopes</strong> &mdash; the complete daily picture</li>
-        <li><strong>Detailed birth chart analysis</strong> &mdash; every planet, house, and aspect explained</li>
-        <li><strong>Full compatibility reports</strong> &mdash; beyond Sun sign matching</li>
-        <li><strong>Priority access</strong> &mdash; new features launch for Premium members first</li>
-      </ul>
-      <p>No commitment required. Cancel anytime during your trial &mdash; you won&rsquo;t be charged.</p>
-      ${ctaButton('Start Your Free Trial', `${API_URL}/pricing`)}
-      <p style="color: #666; font-size: 13px; margin-top: 16px;">Plans start at $9.99/month after trial.</p>
-    `, user.id),
+      <p>For the next 7 days, everything Stellara offers is yours &mdash; completely free. No strings attached.</p>
+      ${infoBox(`
+        <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9789; Moon &amp; Rising horoscopes</strong> &mdash; The full daily picture, not just the headline</p>
+        <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9734; Complete birth chart analysis</strong> &mdash; Every planet, house, and aspect decoded</p>
+        <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#10084; Deep compatibility reports</strong> &mdash; Beyond surface-level sign matching</p>
+        <p style="margin:0;"><strong style="color:#7C3AED;">&#9888; Transit alerts</strong> &mdash; Know when Mercury retrograde is coming before it hits</p>
+      `)}
+      ${goldDivider()}
+      <p style="text-align:center;font-size:16px;font-weight:600;color:#1a1a2e;">No credit card tricks. Cancel with one tap.<br />If it&rsquo;s not for you, you pay nothing.</p>
+      ${ctaButton('Start Your Free 7 Days', `${API_URL}/pricing`, { variant: 'gold' })}
+      <p style="color:#666;font-size:13px;margin-top:20px;text-align:center;">Plans start at $7.99/mo when billed annually after trial. Join thousands of stargazers who read the complete cosmic picture.</p>
+    `, user.id, 'Full Moon & Rising horoscopes, detailed charts, compatibility reports \u2014 on us'),
   },
 
-  // Day 14: Conversion — final nudge with urgency
+  // Day 14: Conversion — final nudge with warmth
   {
     key: 'nurture_7_last_chance',
     delayDays: 14,
     shouldSend: (user) => !isPremium(user),
-    subject: (user) => `Last chance: your stars have something to say, ${user.name}`,
-    html: (user) => emailWrapper(`
-      <h1 style="color: #7c3aed;">Your Full Cosmic Story Is Waiting</h1>
+    subject: (user) => `${user.name}, the stars have more to tell you`,
+    html: (user) => userEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Your Cosmic Story Has More Chapters</h1>
       <p>Hi ${user.name},</p>
-      <p>Over the past two weeks, you&rsquo;ve started exploring your cosmic blueprint with Stellara. But there&rsquo;s so much more the stars have to tell you.</p>
-      ${user.sun_sign ? `<p>As a <strong>${capitalize(user.sun_sign)}</strong>, you&rsquo;ve been reading your Sun sign horoscope. But your Moon and Rising signs add crucial context that can change the entire reading.</p>` : ''}
-      <p>Join thousands of stargazers who&rsquo;ve unlocked their full cosmic profile:</p>
-      <div style="background: #f8f5ff; border-radius: 12px; padding: 20px; margin: 16px 0;">
-        <p style="margin: 0; font-style: italic; color: #666;">&ldquo;Reading all three horoscopes changed my mornings. It&rsquo;s like the difference between a weather forecast and a detailed climate report.&rdquo;</p>
-      </div>
-      ${ctaButton('See What You\'re Missing', `${API_URL}/pricing`)}
-    `, user.id),
+      <p>Over the past two weeks, you&rsquo;ve started reading your cosmic story with Stellara. You&rsquo;ve explored your horoscope, maybe checked a compatibility match, maybe even mapped your birth chart.</p>
+      ${user.sun_sign ? `<p>As a <strong>${capitalize(user.sun_sign)}</strong>, your Sun horoscope gives you the headline. But your Moon and Rising signs add the nuance that changes everything &mdash; the difference between a weather summary and a detailed forecast tailored to your exact coordinates.</p>` : '<p>But there&rsquo;s so much more the stars have to tell you. Your Moon and Rising sign horoscopes add the depth and nuance that a Sun sign reading alone can&rsquo;t capture.</p>'}
+      ${socialProofBlock('I was skeptical, but reading all three horoscopes genuinely helps me prepare for my day. The Moon horoscope especially \u2014 it explains so much about my emotional patterns that I couldn\u2019t see before.', 'Sarah K., Stellara Premium')}
+      ${goldDivider()}
+      <p>Your 7-day free trial is still available. We&rsquo;d love for you to experience the full depth of what the stars have to say.</p>
+      ${ctaButton('Try 7 Days Free', `${API_URL}/pricing`, { variant: 'gold' })}
+      <p style="color:#888;font-size:13px;margin-top:24px;text-align:center;font-style:italic;">Not ready? No pressure. Keep using Stellara free &mdash; we&rsquo;re glad to have you either way.</p>
+    `, user.id, 'Your free trial offer is still available'),
   },
 ];
 
@@ -267,84 +266,64 @@ interface SubscriberEmail {
   html: (sub: Subscriber) => string;
 }
 
-function subscriberEmailFooter(subscriberId: string): string {
-  const token = Buffer.from(subscriberId).toString('base64url');
-  const apiUrl = process.env.API_URL ?? 'https://api.stellera.co';
-  return `
-    <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;" />
-    <p style="color: #999; font-size: 11px; text-align: center;">
-      Your stars, decoded. &mdash; Stellara<br />
-      <a href="${apiUrl}/email/unsubscribe-subscriber?token=${token}" style="color: #999;">Unsubscribe</a>
-    </p>
-  `;
-}
-
-function subscriberWrapper(content: string, subscriberId: string): string {
-  return `
-    <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a2e;">
-      ${content}
-      ${subscriberEmailFooter(subscriberId)}
-    </div>
-  `;
-}
-
 const SUBSCRIBER_SEQUENCE: SubscriberEmail[] = [
-  // Day 0: Welcome — missed the real-time welcome email
+  // Day 0: Welcome
   {
     key: 'sub_nurture_0_welcome',
     delayDays: 0,
-    subject: "Welcome to Stellara — your cosmic journey begins",
-    html: (sub) => subscriberWrapper(`
-      <h1 style="color: #7c3aed;">Welcome, stargazer!</h1>
-      <p>You&rsquo;re now subscribed to Stellara&rsquo;s cosmic updates. Here&rsquo;s what to expect:</p>
-      <ul>
-        <li><strong>Daily horoscope insights</strong> for all 12 signs</li>
-        <li><strong>Major transit alerts</strong> &mdash; Mercury retrograde, full moons, eclipses</li>
-        <li><strong>Weekly cosmic energy forecasts</strong></li>
-      </ul>
+    subject: 'Welcome to the cosmos \u2014 your first horoscope is waiting',
+    html: (sub) => subscriberEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Welcome, Stargazer</h1>
+      <p>You&rsquo;re officially part of the Stellara community. Here&rsquo;s what to expect in your inbox:</p>
+      ${infoBox(`
+        <p style="margin:0 0 8px;"><strong style="color:#7C3AED;">&#9734; Daily horoscope insights</strong> for all 12 signs</p>
+        <p style="margin:0 0 8px;"><strong style="color:#7C3AED;">&#9789; Major transit alerts</strong> &mdash; Mercury retrograde, full moons, eclipses</p>
+        <p style="margin:0;"><strong style="color:#7C3AED;">&#10022; Weekly cosmic energy forecasts</strong></p>
+      `)}
       <p>Start by reading today&rsquo;s horoscope &mdash; tap your sign and see what the stars have in store.</p>
       ${ctaButton("Read Today's Horoscope", `${API_URL}/horoscope`)}
-      <p style="color: #666; font-size: 13px; margin-top: 24px;">Your stars, decoded. &mdash; Stellara</p>
-    `, sub.id),
+      <p style="color:#666;font-size:13px;margin-top:20px;">Want personalized readings? <a href="${API_URL}/signup" style="color:#7C3AED;text-decoration:underline;">Create a free account</a> to unlock your birth chart and Big Three.</p>
+    `, sub.id, 'Daily horoscopes, transit alerts, and cosmic energy forecasts'),
   },
 
   // Day 3: Drive to site — daily horoscope
   {
     key: 'sub_nurture_1_horoscope',
     delayDays: 3,
-    subject: 'Your daily horoscope is live — what do the stars say?',
-    html: (sub) => subscriberWrapper(`
-      <h1 style="color: #7c3aed;">Today&rsquo;s Cosmic Forecast Is Ready</h1>
+    subject: 'Your cosmic forecast is live \u2014 what do the stars say today?',
+    html: (sub) => subscriberEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Today&rsquo;s Cosmic Forecast Is Ready</h1>
       <p>Hey there!</p>
-      <p>Your daily horoscope has been updated. Stellara covers all 12 signs with personalized insights for:</p>
-      <ul>
-        <li><strong>Overall energy</strong> &mdash; what the stars have in store today</li>
-        <li><strong>Love &amp; relationships</strong> &mdash; cosmic chemistry insights</li>
-        <li><strong>Career &amp; money</strong> &mdash; your professional outlook</li>
-        <li><strong>Wellness</strong> &mdash; mind, body, and spirit guidance</li>
-      </ul>
-      <p>Make it a morning ritual &mdash; check in with the stars over your coffee.</p>
+      <p>Your daily horoscope has been updated with fresh insights. Stellara covers all 12 signs with guidance for:</p>
+      ${infoBox(`
+        <p style="margin:0 0 8px;"><strong>&#9734; Overall energy</strong> &mdash; what the stars have in store today</p>
+        <p style="margin:0 0 8px;"><strong>&#10084; Love &amp; relationships</strong> &mdash; cosmic chemistry insights</p>
+        <p style="margin:0 0 8px;"><strong>&#9733; Career &amp; money</strong> &mdash; your professional outlook</p>
+        <p style="margin:0;"><strong>&#10023; Wellness</strong> &mdash; mind, body, and spirit guidance</p>
+      `)}
+      <p>Make it a morning ritual &mdash; 2 minutes with your horoscope over coffee. Thousands of readers already do.</p>
       ${ctaButton("Read Today's Horoscope", `${API_URL}/horoscope`)}
-    `, sub.id),
+    `, sub.id, 'Love, career, wellness: today\u2019s full zodiac breakdown'),
   },
 
   // Day 7: Convert to account — birth chart
   {
     key: 'sub_nurture_2_birth_chart',
     delayDays: 7,
-    subject: 'Your cosmic blueprint — free birth chart inside',
-    html: (sub) => subscriberWrapper(`
-      <h1 style="color: #7c3aed;">Unlock Your Cosmic Blueprint</h1>
+    subject: 'There\u2019s more to you than your zodiac sign',
+    html: (sub) => subscriberEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Your Zodiac Sign Is Just the Beginning</h1>
       <p>Hey there!</p>
-      <p>Did you know your zodiac sign is just the beginning? Your birth chart maps every planet&rsquo;s position at the exact moment you were born &mdash; revealing your emotional world, how others see you, and so much more.</p>
-      <div style="background: #f8f5ff; border-radius: 12px; padding: 20px; margin: 16px 0;">
-        <p style="margin: 0 0 12px;"><strong style="color: #7c3aed;">&#9788; Sun Sign</strong> &mdash; Your core identity</p>
-        <p style="margin: 0 0 12px;"><strong style="color: #7c3aed;">&#9789; Moon Sign</strong> &mdash; Your emotional landscape</p>
-        <p style="margin: 0;"><strong style="color: #7c3aed;">&#8599; Rising Sign</strong> &mdash; How the world sees you</p>
-      </div>
+      <p>Most people know their zodiac sign. But did you know your birth chart reveals two other placements that matter just as much &mdash; and in some ways, even more?</p>
+      ${infoBox(`
+        <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9788; Sun Sign</strong> &mdash; Your core identity (the one everyone knows)</p>
+        <p style="margin:0 0 10px;"><strong style="color:#7C3AED;">&#9789; Moon Sign</strong> &mdash; Your emotional landscape and deepest needs</p>
+        <p style="margin:0;"><strong style="color:#7C3AED;">&#8599; Rising Sign</strong> &mdash; How the world perceives you</p>
+      `)}
       <p>Create a free Stellara account and generate your birth chart in 30 seconds &mdash; all you need is your birth date, time, and location.</p>
-      ${ctaButton('Generate Your Free Birth Chart', `${API_URL}/birth-chart`)}
-    `, sub.id),
+      ${ctaButton('Get Your Free Birth Chart', `${API_URL}/birth-chart`)}
+      <p style="color:#666;font-size:13px;margin-top:20px;">Over 14,000 people have already discovered their Big Three with Stellara.</p>
+    `, sub.id, 'Your birth chart reveals your Moon sign, Rising sign, and so much more'),
   },
 
   // Day 14: Re-engagement — compatibility
@@ -352,15 +331,15 @@ const SUBSCRIBER_SEQUENCE: SubscriberEmail[] = [
     key: 'sub_nurture_3_compatibility',
     delayDays: 14,
     subject: 'Who are you cosmically compatible with?',
-    html: (sub) => subscriberWrapper(`
-      <h1 style="color: #7c3aed;">Cosmic Compatibility</h1>
+    html: (sub) => subscriberEmailHtml(`
+      <h1 style="color:#7C3AED;margin:0 0 16px;font-size:24px;">Cosmic Compatibility</h1>
       <p>Hey there!</p>
-      <p>Ever wonder why you click with some people and clash with others? The stars might have the answer.</p>
-      <p>Stellara&rsquo;s compatibility tool analyzes the elemental and modal dynamics between any two zodiac signs &mdash; revealing where you click, where you clash, and how to make it work.</p>
+      <p>Ever wonder why you click instantly with some people and clash with others for no apparent reason? The answer might be written in the stars.</p>
+      <p>Stellara&rsquo;s compatibility tool analyzes the elemental and modal dynamics between any two zodiac signs &mdash; revealing where you connect, where you create friction, and how to make it work.</p>
       <p>Try it with your partner, best friend, coworker, or anyone you&rsquo;re curious about.</p>
       ${ctaButton('Check Your Compatibility', `${API_URL}/compatibility`)}
-      <p style="color: #666; font-size: 13px; margin-top: 24px;">For even deeper insights, create a free account and get your personalized birth chart included.</p>
-    `, sub.id),
+      <p style="color:#666;font-size:13px;margin-top:20px;">For even deeper insights, <a href="${API_URL}/signup" style="color:#7C3AED;text-decoration:underline;">create a free account</a> and get your personalized birth chart.</p>
+    `, sub.id, 'The stars explain why you click with some people and clash with others'),
   },
 ];
 
