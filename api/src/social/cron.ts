@@ -320,8 +320,13 @@ function generateAllPosts(): ScheduledPost[] {
   const seed = daySeed();
   const posts: ScheduledPost[] = [];
 
-  // 12 sign posts: 07:00 - 07:55
-  SIGNS.forEach((sign, i) => {
+  // 6 sign posts per day (alternating): 07:00 - 07:25
+  // Even days = first 6 signs (Aries→Virgo), odd days = last 6 (Libra→Pisces)
+  // Halved from 12 to reduce account activity
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const signSubset = dayOfYear % 2 === 0 ? SIGNS.slice(0, 6) : SIGNS.slice(6);
+
+  signSubset.forEach((sign, i) => {
     const horoscope = getFullHoroscope(sign.slug);
     const ratings = HOROSCOPE_RATINGS[sign.slug];
     const teaser = HOROSCOPE_TEASERS[sign.slug];
@@ -348,12 +353,10 @@ function generateAllPosts(): ScheduledPost[] {
     });
   });
 
-  // 8 engagement posts spread through the day (~2h spacing)
-  // Reduced from 20 — reply-first strategy means original posts serve as the "storefront"
-  // for anyone who clicks through from a reply, not the primary growth engine.
+  // 4 engagement posts spread through the day (~4h spacing)
+  // Halved from 8 to reduce account activity
   const engTimes = [
-    '09:00', '10:30', '12:15', '14:00',
-    '16:00', '17:30', '19:00', '20:30',
+    '09:00', '13:00', '17:00', '20:30',
   ];
   engTimes.forEach((time, i) => {
     const category = ENGAGEMENT_POSTS[i % ENGAGEMENT_POSTS.length];
@@ -364,20 +367,22 @@ function generateAllPosts(): ScheduledPost[] {
     });
   });
 
-  // 1 thread per day at 12:00 (high-engagement time)
-  const threadTimes = ['12:00'];
-  threadTimes.forEach((time, i) => {
-    const templateIndex = (seed + i) % THREAD_TEMPLATES.length;
-    const variantIndex = (seed + i) % THREAD_TEMPLATES[templateIndex].length;
-    const threadTweets = THREAD_TEMPLATES[templateIndex][variantIndex];
+  // 1 thread every other day at 12:00 (halved to reduce account activity)
+  if (dayOfYear % 2 === 1) {
+    const threadTimes = ['12:00'];
+    threadTimes.forEach((time, i) => {
+      const templateIndex = (seed + i) % THREAD_TEMPLATES.length;
+      const variantIndex = (seed + i) % THREAD_TEMPLATES[templateIndex].length;
+      const threadTweets = THREAD_TEMPLATES[templateIndex][variantIndex];
 
-    posts.push({
-      text: threadTweets[0],
-      type: 'thread',
-      scheduledFor: time,
-      threadTweets,
+      posts.push({
+        text: threadTweets[0],
+        type: 'thread',
+        scheduledFor: time,
+        threadTweets,
+      });
     });
-  });
+  }
 
   return posts;
 }
