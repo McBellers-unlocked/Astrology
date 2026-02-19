@@ -1,35 +1,96 @@
 /**
- * Automated engagement cron script.
+ * Automated engagement cron script — reply-first strategy.
  *
- * Searches for trending astrology tweets from mid-size accounts (10K-100K followers),
- * generates witty replies using Claude, and posts them.
+ * Three-tier targeting system:
+ *   Tier 1: Target accounts — monitor specific high-value accounts, reply fast (recency-sorted, no like threshold)
+ *   Tier 2: Crossover niches — astrology × crypto, dating, TV, wellness, memes (engagement-sorted)
+ *   Tier 3: General astrology — broad keyword pool for reach (engagement-sorted)
  *
  * Safety guards:
- * - Max 8 replies + 3 QTs per run, 50/day cap
+ * - Max 15 replies + 5 QTs per run, 75/day cap
  * - Never replies to the same tweet twice (reply_log table)
  * - Never replies to the same author twice per day
  * - Skips own tweets
  * - 15-second delay between replies to avoid spam detection
- * - Min 1 like on tweet to engage (catch fresh tweets early)
+ * - Min 1 like on tweet to engage (except target accounts — being first matters more)
+ * - Min 25 likes for quote tweets
  * - Requires Twitter Basic tier ($100/mo) for search API
  *
- * Crontab entry (7x daily, every 2 hours from 8am-8pm):
- *   15 8,10,12,14,16,18,20 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
+ * Crontab entry (hourly, 7am-10pm = 16 runs/day):
+ *   15 7-22 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import db from '../db.js';
 import { searchRecentTweets, replyToTweet, quoteTweet, type SearchedTweet } from './twitter.js';
 
-const MAX_REPLIES_PER_RUN = 8;
-const QUOTE_TWEETS_PER_RUN = 3;   // Top-engagement tweets get QT'd (visible on our timeline)
+// --- Volume knobs ---
+const MAX_REPLIES_PER_RUN = 15;
+const QUOTE_TWEETS_PER_RUN = 5;
 const REPLY_DELAY_MS = 15_000;
-const MIN_LIKES_FOR_QT = 10;      // Only QT tweets with decent engagement
+const MIN_LIKES_FOR_QT = 25;
+const DAILY_CAP = 75;
+const QUERIES_PER_RUN = 5;              // 2 crossover + 3 general (target queries always run in addition)
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-// Search queries — broad pool, 2 queried per run (rotated)
-const SEARCH_QUERIES = [
+// --- Target accounts: monitor these for fast replies ---
+// Being first to reply to big accounts = maximum visibility.
+// These accounts get: no like threshold, recency sorting, priority processing.
+const TARGET_ACCOUNTS: string[] = [
+  // Astrology accounts
+  'notallgeminis',       // zodiac humour
+  'jakesastrology',      // popular astrologer
+  'CosmicRX',            // astrology + wellness
+  'glossy_zodiac',       // astro aesthetics
+  'ChaninNicholas',      // professional astrologer
+  'TheZodiacTea',        // zodiac drama/tea
+  // Crossover accounts (not primarily astrology — the crossover voice is our edge)
+  'CryptoWendyO',        // crypto personality
+  'BitcoinHuddler',      // crypto (proven: 3.7K impressions on mercury retro reply)
+  'ashanism',            // pop culture (proven: 42 likes on saturn return reply)
+  'betches',             // pop culture/dating memes
+  'therapyforblkgirls',  // wellness/therapy
+  'astaborea',           // astrology meme account
+];
+
+// Build target account queries — 3 accounts per query to stay under 512-char query limit
+function buildTargetAccountQueries(): string[] {
+  const queries: string[] = [];
+  for (let i = 0; i < TARGET_ACCOUNTS.length; i += 3) {
+    const batch = TARGET_ACCOUNTS.slice(i, i + 3);
+    const fromClauses = batch.map(u => `from:${u}`).join(' OR ');
+    queries.push(`(${fromClauses}) -is:retweet lang:en`);
+  }
+  return queries;
+}
+
+// --- Search queries: three tiers ---
+
+// Tier 2: Crossover niche queries (highest value after target accounts)
+// These produced our best engagement: crypto x astro, TV x astro, dating x signs
+const CROSSOVER_QUERIES = [
+  // Crypto x astrology
+  '"mercury retrograde" (crypto OR bitcoin OR market OR trading) -is:retweet -is:reply lang:en',
+  '(astrology OR horoscope) (bitcoin OR ethereum OR crypto) -is:retweet -is:reply lang:en',
+  '"not financial advice" (zodiac OR mercury OR retrograde) -is:retweet -is:reply lang:en',
+  // Dating/relationships x signs
+  '"what sign" (dating OR boyfriend OR girlfriend OR crush OR situationship) -is:retweet -is:reply lang:en',
+  '(zodiac OR sign) ("red flag" OR "green flag" OR "the ick") -is:retweet -is:reply lang:en',
+  '"compatible signs" OR "zodiac compatibility" (dating OR love) -is:retweet -is:reply lang:en',
+  // Pop culture / TV x astrology
+  '(zodiac OR astrology) ("reality tv" OR bachelor OR "love island" OR "white lotus") -is:retweet -is:reply lang:en',
+  '"what sign is" (character OR celebrity) -is:retweet -is:reply lang:en',
+  // Wellness / therapy x astrology
+  '(saturn return OR mercury retrograde) (therapy OR "mental health" OR wellness OR healing) -is:retweet -is:reply lang:en',
+  '"birth chart" (therapist OR therapy OR "inner child" OR attachment) -is:retweet -is:reply lang:en',
+  // Memes/humor x signs
+  '"as a" (scorpio OR gemini OR virgo OR aries OR leo) "I" -is:retweet -is:reply lang:en',
+  '(zodiac OR horoscope) (meme OR "I feel attacked" OR "called out") -is:retweet -is:reply lang:en',
+];
+
+// Tier 3: General astrology queries (the existing pool, kept for breadth)
+const GENERAL_QUERIES = [
   '"birth chart" OR "natal chart" -is:retweet -is:reply lang:en',
   '"mercury retrograde" OR "saturn return" -is:retweet -is:reply lang:en',
   '"sun sign" OR "rising sign" OR "moon sign" -is:retweet -is:reply lang:en',
@@ -62,19 +123,34 @@ const todayReplyCount = db.prepare(
 );
 
 const insertReply = db.prepare(
-  `INSERT OR IGNORE INTO reply_log (original_tweet_id, author_username, reply_tweet_id, reply_text)
-   VALUES (?, ?, ?, ?)`,
+  `INSERT OR IGNORE INTO reply_log (original_tweet_id, author_username, reply_tweet_id, reply_text, source_type)
+   VALUES (?, ?, ?, ?, ?)`,
 );
+
+// ---- Types ----
+
+type SourceType = 'target_account' | 'crossover' | 'general';
+
+interface CandidateTweet extends SearchedTweet {
+  sourceType: SourceType;
+}
 
 // ---- Claude reply generation ----
 
-async function generateReply(tweet: SearchedTweet): Promise<string | null> {
+async function generateReply(tweet: CandidateTweet): Promise<string | null> {
   if (!ANTHROPIC_API_KEY) {
     console.warn('  [skip] ANTHROPIC_API_KEY not set — cannot generate replies');
     return null;
   }
 
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+  // Build context hint based on source type
+  const sourceHint = tweet.sourceType === 'target_account'
+    ? `This is a tweet from a high-profile account (@${tweet.authorUsername}, ${tweet.followerCount.toLocaleString()} followers). Being early and memorable matters. Make the reply stand out.`
+    : tweet.sourceType === 'crossover'
+    ? `This tweet crosses astrology with another topic. The BEST Stellara replies connect astrology to the tweet's subject in an unexpected, clever way. Lean into the crossover — don't just make a generic astrology comment.`
+    : '';
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
@@ -91,6 +167,10 @@ async function generateReply(tweet: SearchedTweet): Promise<string | null> {
 - Never use hashtags
 - Match the energy of the original tweet (funny → funny, serious → insightful)
 - Feel like a real astrology-enthusiast friend replying, not a brand
+- When the tweet is about crypto, dating, TV, wellness, or any non-astrology topic, connect it to astrology in a surprising and clever way (e.g., "mercury retrograde is not market-moving energy" or "that's such a saturn return breakup")
+- The BEST replies make people think "wait, that's actually a good point" — astrology as an unexpected lens on their topic
+
+${sourceHint}
 
 Tweet from @${tweet.authorUsername}:
 "${tweet.text}"
@@ -118,64 +198,137 @@ async function main() {
 
   // Check daily reply budget
   const { count: todayCount } = todayReplyCount.get() as { count: number };
-  if (todayCount >= 50) {
-    console.log(`  Already sent ${todayCount} replies today — daily limit reached`);
+  if (todayCount >= DAILY_CAP) {
+    console.log(`  Already sent ${todayCount} replies today — daily limit (${DAILY_CAP}) reached`);
     return;
   }
+  const remainingBudget = DAILY_CAP - todayCount;
 
   // Get our own Twitter user ID to avoid replying to ourselves
   const ownUsername = (process.env.TWITTER_USERNAME ?? 'stelleraapp').toLowerCase();
-
-  // Run 3 different queries per session for a wider candidate pool
-  const QUERIES_PER_RUN = 3;
-  const baseIndex = (now.getHours() * 2 + Math.floor(now.getMinutes() / 30)) % SEARCH_QUERIES.length;
-
-  const tweets: SearchedTweet[] = [];
   const seenIds = new Set<string>();
 
-  for (let i = 0; i < QUERIES_PER_RUN; i++) {
-    const queryIndex = (baseIndex + i) % SEARCH_QUERIES.length;
-    const query = SEARCH_QUERIES[queryIndex];
-    console.log(`  Search ${i + 1}: ${query.slice(0, 60)}...`);
+  // ---- TIER 1: Target account tweets (recency-sorted, no like threshold) ----
+  const targetTweets: CandidateTweet[] = [];
+  const targetQueries = buildTargetAccountQueries();
+  console.log(`  --- Tier 1: Target accounts (${TARGET_ACCOUNTS.length} accounts, ${targetQueries.length} queries) ---`);
 
+  for (const query of targetQueries) {
+    console.log(`  [target] ${query.slice(0, 70)}...`);
     try {
       const results = await searchRecentTweets(query, 20);
       for (const t of results) {
         if (!seenIds.has(t.id)) {
           seenIds.add(t.id);
-          tweets.push(t);
+          targetTweets.push({ ...t, sourceType: 'target_account' });
         }
       }
     } catch (err) {
-      console.error('  Search failed:', err instanceof Error ? err.message : err);
+      console.error('  [target] Search failed:', err instanceof Error ? err.message : err);
     }
   }
 
-  console.log(`  Found ${tweets.length} unique tweets across ${QUERIES_PER_RUN} queries`);
-
-  // Filter: skip our own tweets, already-replied tweets, and low-engagement tweets
-  const candidates = tweets.filter((t) => {
-    // Skip our own tweets
+  // Filter target tweets: skip own, skip already-replied, skip same-author-today
+  // NO like threshold for target accounts — being first matters more than engagement
+  const targetCandidates = targetTweets.filter((t) => {
     if (t.authorUsername.toLowerCase() === ownUsername) return false;
-    // Skip tweets we already replied to
     if (wasRepliedTo.get(t.id)) return false;
-    // Skip if we replied to this author today
     if (repliedToAuthorToday.get(t.authorUsername)) return false;
-    // Require some engagement (at least 5 likes)
-    if (t.likeCount < 1) return false;
     return true;
   });
 
-  // Sort by engagement (likes + retweets), pick the top ones
-  candidates.sort((a, b) => (b.likeCount + b.retweetCount) - (a.likeCount + a.retweetCount));
+  // Sort target tweets by RECENCY (newest first), not engagement
+  targetCandidates.sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
-  // Split: top high-engagement tweets get quote-tweeted (visible on our timeline),
-  // rest get regular replies (hidden in threads)
-  const qtCandidates = candidates.filter((t) => t.likeCount >= MIN_LIKES_FOR_QT).slice(0, QUOTE_TWEETS_PER_RUN);
+  console.log(`  [target] ${targetTweets.length} found, ${targetCandidates.length} eligible`);
+
+  // ---- TIER 2: Crossover niche queries (engagement-sorted, standard filters) ----
+  const crossoverTweets: CandidateTweet[] = [];
+  const crossoverCount = 2;
+  const crossoverBase = (now.getHours() * 2 + Math.floor(now.getMinutes() / 30)) % CROSSOVER_QUERIES.length;
+
+  console.log(`  --- Tier 2: Crossover niches (${crossoverCount} queries) ---`);
+  for (let i = 0; i < crossoverCount; i++) {
+    const idx = (crossoverBase + i) % CROSSOVER_QUERIES.length;
+    const query = CROSSOVER_QUERIES[idx];
+    console.log(`  [crossover] ${query.slice(0, 70)}...`);
+    try {
+      const results = await searchRecentTweets(query, 20);
+      for (const t of results) {
+        if (!seenIds.has(t.id)) {
+          seenIds.add(t.id);
+          crossoverTweets.push({ ...t, sourceType: 'crossover' });
+        }
+      }
+    } catch (err) {
+      console.error('  [crossover] Search failed:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  const crossoverCandidates = crossoverTweets.filter((t) => {
+    if (t.authorUsername.toLowerCase() === ownUsername) return false;
+    if (wasRepliedTo.get(t.id)) return false;
+    if (repliedToAuthorToday.get(t.authorUsername)) return false;
+    if (t.likeCount < 1) return false;
+    return true;
+  });
+  crossoverCandidates.sort((a, b) => (b.likeCount + b.retweetCount) - (a.likeCount + a.retweetCount));
+  console.log(`  [crossover] ${crossoverTweets.length} found, ${crossoverCandidates.length} eligible`);
+
+  // ---- TIER 3: General astrology queries (existing behavior) ----
+  const generalTweets: CandidateTweet[] = [];
+  const generalCount = QUERIES_PER_RUN - crossoverCount; // 5 - 2 = 3 general queries
+  const generalBase = (now.getHours() * 3 + now.getDate()) % GENERAL_QUERIES.length;
+
+  console.log(`  --- Tier 3: General astrology (${generalCount} queries) ---`);
+  for (let i = 0; i < generalCount; i++) {
+    const idx = (generalBase + i) % GENERAL_QUERIES.length;
+    const query = GENERAL_QUERIES[idx];
+    console.log(`  [general] ${query.slice(0, 70)}...`);
+    try {
+      const results = await searchRecentTweets(query, 20);
+      for (const t of results) {
+        if (!seenIds.has(t.id)) {
+          seenIds.add(t.id);
+          generalTweets.push({ ...t, sourceType: 'general' });
+        }
+      }
+    } catch (err) {
+      console.error('  [general] Search failed:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  const generalCandidates = generalTweets.filter((t) => {
+    if (t.authorUsername.toLowerCase() === ownUsername) return false;
+    if (wasRepliedTo.get(t.id)) return false;
+    if (repliedToAuthorToday.get(t.authorUsername)) return false;
+    if (t.likeCount < 1) return false;
+    return true;
+  });
+  generalCandidates.sort((a, b) => (b.likeCount + b.retweetCount) - (a.likeCount + a.retweetCount));
+  console.log(`  [general] ${generalTweets.length} found, ${generalCandidates.length} eligible`);
+
+  // ---- Combine candidates with priority: target > crossover > general ----
+  const allCandidates: CandidateTweet[] = [
+    ...targetCandidates,
+    ...crossoverCandidates,
+    ...generalCandidates,
+  ];
+
+  // Split: QT only from crossover + general (replying to target accounts builds relationship; QT'ing feels adversarial)
+  const qtCandidates = allCandidates
+    .filter((t) => t.sourceType !== 'target_account' && t.likeCount >= MIN_LIKES_FOR_QT)
+    .slice(0, QUOTE_TWEETS_PER_RUN);
+
   const qtIds = new Set(qtCandidates.map((t) => t.id));
-  const replyCandidates = candidates.filter((t) => !qtIds.has(t.id)).slice(0, MAX_REPLIES_PER_RUN);
+  const replyCandidates = allCandidates
+    .filter((t) => !qtIds.has(t.id))
+    .slice(0, Math.min(MAX_REPLIES_PER_RUN, remainingBudget));
 
-  console.log(`  ${candidates.length} eligible — ${qtCandidates.length} quote tweets, ${replyCandidates.length} replies`);
+  console.log(`\n  TOTALS: ${allCandidates.length} eligible — ${qtCandidates.length} QTs, ${replyCandidates.length} replies`);
+  console.log(`    Target: ${targetCandidates.length} | Crossover: ${crossoverCandidates.length} | General: ${generalCandidates.length}`);
 
   let sent = 0;
   let quoted = 0;
@@ -183,7 +336,7 @@ async function main() {
 
   // ---- Quote tweets first (these show on OUR timeline = visibility) ----
   for (const tweet of qtCandidates) {
-    console.log(`  [QT] @${tweet.authorUsername} (${tweet.likeCount} likes): "${tweet.text.slice(0, 60)}..."`);
+    console.log(`  [QT|${tweet.sourceType}] @${tweet.authorUsername} (${tweet.likeCount} likes): "${tweet.text.slice(0, 60)}..."`);
 
     try {
       const replyText = await generateReply(tweet);
@@ -197,11 +350,11 @@ async function main() {
       if (process.env.TWITTER_API_KEY) {
         const result = await quoteTweet(replyText, tweet.id);
         console.log(`    [QT SENT] Quote tweet posted: ${result.id}`);
-        insertReply.run(tweet.id, tweet.authorUsername, result.id, `[QT] ${replyText}`);
+        insertReply.run(tweet.id, tweet.authorUsername, result.id, `[QT] ${replyText}`, tweet.sourceType);
         quoted++;
       } else {
         console.log(`    [dry] Would QT: "${replyText}"`);
-        insertReply.run(tweet.id, tweet.authorUsername, null, `[QT] ${replyText}`);
+        insertReply.run(tweet.id, tweet.authorUsername, null, `[QT] ${replyText}`, tweet.sourceType);
         quoted++;
       }
     } catch (err) {
@@ -215,7 +368,7 @@ async function main() {
 
   // ---- Regular replies ----
   for (const tweet of replyCandidates) {
-    console.log(`  @${tweet.authorUsername} (${tweet.likeCount} likes): "${tweet.text.slice(0, 60)}..."`);
+    console.log(`  [${tweet.sourceType}] @${tweet.authorUsername} (${tweet.likeCount} likes, ${tweet.followerCount.toLocaleString()} followers): "${tweet.text.slice(0, 60)}..."`);
 
     try {
       const replyText = await generateReply(tweet);
@@ -234,11 +387,11 @@ async function main() {
           : mentionPrefix + replyText;
         const result = await replyToTweet(fullReply, tweet.id);
         console.log(`    [SENT] Reply posted: ${result.id}`);
-        insertReply.run(tweet.id, tweet.authorUsername, result.id, replyText);
+        insertReply.run(tweet.id, tweet.authorUsername, result.id, replyText, tweet.sourceType);
         sent++;
       } else {
         console.log(`    [dry] Would reply: "${replyText}"`);
-        insertReply.run(tweet.id, tweet.authorUsername, null, replyText);
+        insertReply.run(tweet.id, tweet.authorUsername, null, replyText, tweet.sourceType);
         sent++;
       }
     } catch (err) {

@@ -31,6 +31,7 @@ export interface SearchedTweet {
   authorId: string;
   authorUsername: string;
   authorName: string;
+  followerCount: number;
   likeCount: number;
   retweetCount: number;
   createdAt: string;
@@ -198,19 +199,20 @@ export async function searchRecentTweets(query: string, maxResults = 10): Promis
 
   if (!json.data) return [];
 
-  const usersMap = new Map<string, { username: string; name: string }>();
+  const usersMap = new Map<string, { username: string; name: string; followerCount: number }>();
   for (const u of json.includes?.users ?? []) {
-    usersMap.set(u.id, { username: u.username, name: u.name });
+    usersMap.set(u.id, { username: u.username, name: u.name, followerCount: u.public_metrics?.followers_count ?? 0 });
   }
 
   return json.data.map((t) => {
-    const author = usersMap.get(t.author_id) ?? { username: 'unknown', name: 'Unknown' };
+    const author = usersMap.get(t.author_id) ?? { username: 'unknown', name: 'Unknown', followerCount: 0 };
     return {
       id: t.id,
       text: t.text,
       authorId: t.author_id,
       authorUsername: author.username,
       authorName: author.name,
+      followerCount: author.followerCount,
       likeCount: t.public_metrics.like_count,
       retweetCount: t.public_metrics.retweet_count,
       createdAt: t.created_at,
