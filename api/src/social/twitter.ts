@@ -16,6 +16,43 @@ const API_SECRET = process.env.TWITTER_API_SECRET ?? '';
 const ACCESS_TOKEN = process.env.TWITTER_ACCESS_TOKEN ?? '';
 const ACCESS_SECRET = process.env.TWITTER_ACCESS_SECRET ?? '';
 
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 2000;
+
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Fetch with automatic retry on transient failures (5xx, 429, network errors) */
+async function retryableFetch(url: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      if (res.ok || !RETRYABLE_STATUS_CODES.has(res.status)) {
+        return res;
+      }
+      // Retryable HTTP status — wait and try again
+      const retryAfter = res.headers.get('retry-after');
+      const delayMs = retryAfter
+        ? parseInt(retryAfter, 10) * 1000
+        : BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(`Twitter API ${res.status} on attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delayMs}ms…`);
+      lastError = new Error(`Twitter API error (${res.status}): ${await res.text()}`);
+      await sleep(delayMs);
+    } catch (err) {
+      // Network / DNS / timeout error — retryable
+      lastError = err;
+      const delayMs = BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(`Twitter fetch error on attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delayMs}ms…`, err);
+      await sleep(delayMs);
+    }
+  }
+  throw lastError;
+}
+
 const TWEET_URL = 'https://api.twitter.com/2/tweets';
 const SEARCH_URL = 'https://api.twitter.com/2/tweets/search/recent';
 const MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json';
@@ -98,7 +135,7 @@ export async function uploadMedia(imageBuffer: Buffer): Promise<string> {
   // Build form-urlencoded body
   const body = `media_data=${encodeURIComponent(mediaData)}`;
 
-  const res = await fetch(MEDIA_UPLOAD_URL, {
+  const res = await retryableFetch(MEDIA_UPLOAD_URL, {
     method: 'POST',
     headers: {
       Authorization: authHeader,
@@ -133,7 +170,7 @@ export async function postToTwitter(text: string, mediaId?: string): Promise<Twe
   const body = JSON.stringify(tweetBody);
   const authHeader = buildOAuthHeader('POST', TWEET_URL);
 
-  const res = await fetch(TWEET_URL, {
+  const res = await retryableFetch(TWEET_URL, {
     method: 'POST',
     headers: {
       Authorization: authHeader,
@@ -174,7 +211,7 @@ export async function searchRecentTweets(query: string, maxResults = 10): Promis
   // For GET requests, include query params in the OAuth signature
   const authHeader = buildOAuthHeader('GET', SEARCH_URL, params);
 
-  const res = await fetch(url, {
+  const res = await retryableFetch(url, {
     method: 'GET',
     headers: { Authorization: authHeader },
   });
@@ -236,7 +273,7 @@ export async function replyToTweet(text: string, inReplyToTweetId: string): Prom
   const body = JSON.stringify(tweetBody);
   const authHeader = buildOAuthHeader('POST', TWEET_URL);
 
-  const res = await fetch(TWEET_URL, {
+  const res = await retryableFetch(TWEET_URL, {
     method: 'POST',
     headers: {
       Authorization: authHeader,
@@ -271,7 +308,7 @@ export async function quoteTweet(text: string, quotedTweetId: string): Promise<T
   const body = JSON.stringify(tweetBody);
   const authHeader = buildOAuthHeader('POST', TWEET_URL);
 
-  const res = await fetch(TWEET_URL, {
+  const res = await retryableFetch(TWEET_URL, {
     method: 'POST',
     headers: {
       Authorization: authHeader,
@@ -317,7 +354,7 @@ export async function postThread(tweets: string[], mediaId?: string): Promise<Tw
     const body = JSON.stringify(tweetBody);
     const authHeader = buildOAuthHeader('POST', TWEET_URL);
 
-    const res = await fetch(TWEET_URL, {
+    const res = await retryableFetch(TWEET_URL, {
       method: 'POST',
       headers: {
         Authorization: authHeader,
