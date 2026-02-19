@@ -38,20 +38,29 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 // Being first to reply to big accounts = maximum visibility.
 // These accounts get: no like threshold, recency sorting, priority processing.
 const TARGET_ACCOUNTS: string[] = [
-  // Astrology accounts
+  // --- Major astrology voices ---
+  'chaninicholas',       // Chani Nicholas — biggest modern astrology voice, book author
+  'thezodiacstea',       // ~1M followers, astrology memes, high engagement
+  'sanctuarywrld',       // Sanctuary World — shareable astrology visuals/memes
+  'jakesastrology',      // Cosmopolitan horoscope writer, strong IG crossover
+  'jessica_lanyadoo',    // well-known astrologer, mainstream media appearances
+  'emma_vee',            // modern lifestyle/astrology content creator
+  '1meccanism',          // Mecca Woods — published astrologer
+  'QueerCosmos',         // Colin Bedell — astrology + relationship analysis
+  'aquiriusmaximus',     // tarot/astrology blend, strong engagement
   'notallgeminis',       // zodiac humour
-  'jakesastrology',      // popular astrologer
   'CosmicRX',            // astrology + wellness
   'glossy_zodiac',       // astro aesthetics
-  'ChaninNicholas',      // professional astrologer
-  'TheZodiacTea',        // zodiac drama/tea
-  // Crossover accounts (not primarily astrology — the crossover voice is our edge)
+  'astaborea',           // astrology meme account
+  // --- Finance/crypto × astrology ---
+  'astrologycrypto',     // astrology × crypto sentiment community
+  'FinanceAstr',         // Financial Astrology — planetary patterns × markets
   'CryptoWendyO',        // crypto personality
   'BitcoinHuddler',      // crypto (proven: 3.7K impressions on mercury retro reply)
+  // --- Pop culture / crossover (the voice that gets the most engagement) ---
   'ashanism',            // pop culture (proven: 42 likes on saturn return reply)
   'betches',             // pop culture/dating memes
   'therapyforblkgirls',  // wellness/therapy
-  'astaborea',           // astrology meme account
 ];
 
 // Build target account queries — 3 accounts per query to stay under 512-char query limit
