@@ -13,6 +13,14 @@ import { postToFacebook, threadToFacebookPost } from './facebook.js';
 import { postToInstagram, buildInstagramCaption, threadToInstagramCaption } from './instagram.js';
 import { PostResult, sendFailureAlert, appendResults } from './notify.js';
 import { generateHoroscopeCard, generateEngagementCard } from './image.js';
+import db from '../db.js';
+
+const DRAFT_MODE = process.env.DRAFT_MODE === 'true';
+
+const insertDraft = db.prepare(
+  `INSERT INTO post_drafts (type, text, sign, thread_tweets, reply_to_tweet_id, reply_to_username, reply_to_text, image_buffer, source_type)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+);
 
 /* Re-use the same generation logic from post.ts */
 
@@ -424,6 +432,21 @@ async function main() {
       : post.type === 'horoscope' && post.sign
         ? await generateHoroscopeCard(post.sign)
         : await generateEngagementCard();
+
+    // --- DRAFT MODE: save to DB instead of posting ---
+    if (DRAFT_MODE) {
+      insertDraft.run(
+        post.type,
+        post.text,
+        post.sign ?? null,
+        post.threadTweets ? JSON.stringify(post.threadTweets) : null,
+        null, null, null,
+        imageBuffer,
+        null,
+      );
+      console.log(`  [DRAFT] Queued: ${post.type} ${post.sign ?? ''}`);
+      continue;
+    }
 
     // --- Twitter ---
     if (process.env.TWITTER_API_KEY) {
