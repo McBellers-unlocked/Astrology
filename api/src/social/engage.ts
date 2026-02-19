@@ -7,7 +7,7 @@
  *   Tier 3: General astrology — broad keyword pool for reach (engagement-sorted)
  *
  * Safety guards:
- * - Max 15 replies + 5 QTs per run, 75/day cap
+ * - Max 8 replies + 2 QTs per run, 35/day cap
  * - Never replies to the same tweet twice (reply_log table)
  * - Never replies to the same author twice per day
  * - Skips own tweets
@@ -16,8 +16,8 @@
  * - Min 25 likes for quote tweets
  * - Requires Twitter Basic tier ($100/mo) for search API
  *
- * Crontab entry (hourly, 7am-10pm = 16 runs/day):
- *   15 7-22 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
+ * Crontab entry (every 2 hours, 8am-10pm = 8 runs/day):
+ *   0 8,10,12,14,16,18,20,22 * * * cd ~/Astrology/api && set -a && . ./.env && set +a && /usr/bin/npx tsx src/social/engage.ts >> ~/social-engage.log 2>&1
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -25,12 +25,12 @@ import db from '../db.js';
 import { searchRecentTweets, replyToTweet, quoteTweet, type SearchedTweet } from './twitter.js';
 
 // --- Volume knobs ---
-const MAX_REPLIES_PER_RUN = 15;
-const QUOTE_TWEETS_PER_RUN = 5;
-const REPLY_DELAY_MS = 15_000;
+const MAX_REPLIES_PER_RUN = 8;           // was 15 — halved to reduce account activity
+const QUOTE_TWEETS_PER_RUN = 2;          // was 5
+const REPLY_DELAY_MS = 30_000;           // was 15_000 — slower to look more human
 const MIN_LIKES_FOR_QT = 25;
-const DAILY_CAP = 75;
-const QUERIES_PER_RUN = 5;              // 2 crossover + 3 general (target queries always run in addition)
+const DAILY_CAP = 35;                    // was 75 — halved to reduce account activity
+const QUERIES_PER_RUN = 3;              // was 5 — now 1 crossover + 2 general (target queries always run in addition)
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -255,7 +255,7 @@ async function main() {
 
   // ---- TIER 2: Crossover niche queries (engagement-sorted, standard filters) ----
   const crossoverTweets: CandidateTweet[] = [];
-  const crossoverCount = 2;
+  const crossoverCount = 1;  // was 2 — halved
   const crossoverBase = (now.getHours() * 2 + Math.floor(now.getMinutes() / 30)) % CROSSOVER_QUERIES.length;
 
   console.log(`  --- Tier 2: Crossover niches (${crossoverCount} queries) ---`);
