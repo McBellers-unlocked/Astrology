@@ -348,12 +348,12 @@ function generateAllPosts(): ScheduledPost[] {
     });
   });
 
-  // 20 engagement posts spread through the day (08:30 - 22:00, ~45 min apart)
+  // 8 engagement posts spread through the day (~2h spacing)
+  // Reduced from 20 — reply-first strategy means original posts serve as the "storefront"
+  // for anyone who clicks through from a reply, not the primary growth engine.
   const engTimes = [
-    '08:30', '09:15', '10:00', '10:45', '11:30',
-    '12:15', '13:00', '13:45', '14:30', '15:15',
-    '16:00', '16:45', '17:30', '18:15', '19:00',
-    '19:45', '20:15', '20:45', '21:15', '21:45',
+    '09:00', '10:30', '12:15', '14:00',
+    '16:00', '17:30', '19:00', '20:30',
   ];
   engTimes.forEach((time, i) => {
     const category = ENGAGEMENT_POSTS[i % ENGAGEMENT_POSTS.length];
@@ -364,8 +364,8 @@ function generateAllPosts(): ScheduledPost[] {
     });
   });
 
-  // 2 threads per day at 12:00 and 18:00 (high-engagement times)
-  const threadTimes = ['12:00', '18:00'];
+  // 1 thread per day at 12:00 (high-engagement time)
+  const threadTimes = ['12:00'];
   threadTimes.forEach((time, i) => {
     const templateIndex = (seed + i) % THREAD_TEMPLATES.length;
     const variantIndex = (seed + i) % THREAD_TEMPLATES[templateIndex].length;
