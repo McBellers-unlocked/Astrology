@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
           return [
             {
               source: "/api-proxy/:path*",
-              destination: "https://api.stellera.co/:path*",
+              destination: "http://localhost:3001/:path*",
             },
           ];
         },
