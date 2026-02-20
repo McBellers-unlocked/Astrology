@@ -36,6 +36,7 @@ export default function AdminDraftsPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<Set<number>>(new Set());
+  const [copied, setCopied] = useState<number | null>(null);
 
   const fetchDrafts = useCallback(() => {
     setLoading(true);
@@ -85,6 +86,29 @@ export default function AdminDraftsPage() {
         return next;
       });
     }
+  }
+
+  function handleCopyText(draft: Draft) {
+    let fullText = draft.text;
+    if (draft.thread_tweets) {
+      const tweets = JSON.parse(draft.thread_tweets) as string[];
+      fullText = tweets.join("\n\n---\n\n");
+    }
+    navigator.clipboard.writeText(fullText).then(() => {
+      setCopied(draft.id);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  function handleDownloadImage(draft: Draft) {
+    const url = `${API_URL}/admin/drafts/${draft.id}/image`;
+    const filename = `stellera-${draft.type}-${draft.sign || "post"}-${draft.id}.png`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   const pendingCount = filter === "pending" ? drafts.length : null;
@@ -255,24 +279,40 @@ export default function AdminDraftsPage() {
                 )}
 
                 {/* Actions */}
-                {draft.status === "pending" && (
-                  <div className="flex gap-3 pt-1">
+                <div className="flex gap-3 pt-1 flex-wrap">
+                  {draft.status === "pending" && (
+                    <>
+                      <button
+                        onClick={() => handlePost(draft.id)}
+                        disabled={isActing}
+                        className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isActing ? "Posting..." : "Post"}
+                      </button>
+                      <button
+                        onClick={() => handleSkip(draft.id)}
+                        disabled={isActing}
+                        className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-600/20 text-gray-400 border border-gray-500/30 hover:bg-gray-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Skip
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => handleCopyText(draft)}
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600/30 transition-colors"
+                  >
+                    {copied === draft.id ? "Copied!" : "Copy Text"}
+                  </button>
+                  {draft.has_image === 1 && (
                     <button
-                      onClick={() => handlePost(draft.id)}
-                      disabled={isActing}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleDownloadImage(draft)}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 transition-colors"
                     >
-                      {isActing ? "Posting..." : "Post"}
+                      Download Image
                     </button>
-                    <button
-                      onClick={() => handleSkip(draft.id)}
-                      disabled={isActing}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-600/20 text-gray-400 border border-gray-500/30 hover:bg-gray-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Skip
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
