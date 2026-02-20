@@ -24,6 +24,13 @@ import Anthropic from '@anthropic-ai/sdk';
 import db from '../db.js';
 import { searchRecentTweets, replyToTweet, quoteTweet, type SearchedTweet } from './twitter.js';
 
+const DRAFT_MODE = process.env.DRAFT_MODE === 'true';
+
+const insertDraft = db.prepare(
+  `INSERT INTO post_drafts (type, text, sign, thread_tweets, reply_to_tweet_id, reply_to_username, reply_to_text, image_buffer, source_type)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+);
+
 // --- Volume knobs ---
 const MAX_REPLIES_PER_RUN = 8;           // was 15 — halved to reduce account activity
 const QUOTE_TWEETS_PER_RUN = 2;          // was 5
@@ -356,7 +363,11 @@ async function main() {
 
       console.log(`    QT text: "${replyText}"`);
 
-      if (process.env.TWITTER_API_KEY) {
+      if (DRAFT_MODE) {
+        insertDraft.run('quote_tweet', replyText, null, null, tweet.id, tweet.authorUsername, tweet.text, null, tweet.sourceType);
+        console.log(`    [DRAFT] Queued QT to @${tweet.authorUsername}`);
+        quoted++;
+      } else if (process.env.TWITTER_API_KEY) {
         const result = await quoteTweet(replyText, tweet.id);
         console.log(`    [QT SENT] Quote tweet posted: ${result.id}`);
         insertReply.run(tweet.id, tweet.authorUsername, result.id, `[QT] ${replyText}`, tweet.sourceType);
@@ -388,8 +399,12 @@ async function main() {
 
       console.log(`    Reply: "${replyText}"`);
 
-      // Post the reply — prepend @username so Twitter threads it correctly
-      if (process.env.TWITTER_API_KEY) {
+      if (DRAFT_MODE) {
+        insertDraft.run('reply', replyText, null, null, tweet.id, tweet.authorUsername, tweet.text, null, tweet.sourceType);
+        console.log(`    [DRAFT] Queued reply to @${tweet.authorUsername}`);
+        sent++;
+      } else if (process.env.TWITTER_API_KEY) {
+        // Post the reply — prepend @username so Twitter threads it correctly
         const mentionPrefix = `@${tweet.authorUsername} `;
         const fullReply = replyText.startsWith(`@${tweet.authorUsername}`)
           ? replyText

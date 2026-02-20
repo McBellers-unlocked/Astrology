@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import db from '../db.js';
 import { verifyToken } from '../lib/jwt.js';
 import { readTodayResults, type PostResult } from '../social/notify.js';
+import { postToTwitter, postThread, uploadMedia, replyToTweet, quoteTweet } from '../social/twitter.js';
 
 const router = Router();
 
@@ -419,6 +420,137 @@ router.get('/social', (_req, res) => {
     });
   } catch (err) {
     console.error('Admin social error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ------------------------------------------------------------------
+// GET /admin/drafts — List draft posts
+// ------------------------------------------------------------------
+router.get('/drafts', (req, res) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const drafts = db
+      .prepare(
+        `SELECT id, type, text, sign, thread_tweets, reply_to_tweet_id, reply_to_username,
+                reply_to_text, source_type, status, posted_tweet_id, created_at, acted_at,
+                CASE WHEN image_buffer IS NOT NULL THEN 1 ELSE 0 END as has_image
+         FROM post_drafts WHERE status = ?
+         ORDER BY created_at DESC LIMIT 100`,
+      )
+      .all(status);
+
+    res.json({ drafts });
+  } catch (err) {
+    console.error('Admin drafts error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ------------------------------------------------------------------
+// GET /admin/drafts/:id/image — Serve draft image
+// ------------------------------------------------------------------
+router.get('/drafts/:id/image', (req, res) => {
+  try {
+    const draft = db
+      .prepare('SELECT image_buffer FROM post_drafts WHERE id = ?')
+      .get(req.params.id) as { image_buffer: Buffer | null } | undefined;
+
+    if (!draft?.image_buffer) {
+      res.status(404).json({ error: 'No image found' });
+      return;
+    }
+
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(draft.image_buffer);
+  } catch (err) {
+    console.error('Admin draft image error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ------------------------------------------------------------------
+// POST /admin/drafts/:id/post — Post a draft to Twitter
+// ------------------------------------------------------------------
+router.post('/drafts/:id/post', async (req, res) => {
+  try {
+    const draft = db
+      .prepare(
+        `SELECT id, type, text, sign, thread_tweets, reply_to_tweet_id,
+                reply_to_username, image_buffer, source_type, status
+         FROM post_drafts WHERE id = ?`,
+      )
+      .get(req.params.id) as {
+      id: number;
+      type: string;
+      text: string;
+      sign: string | null;
+      thread_tweets: string | null;
+      reply_to_tweet_id: string | null;
+      reply_to_username: string | null;
+      image_buffer: Buffer | null;
+      source_type: string | null;
+      status: string;
+    } | undefined;
+
+    if (!draft || draft.status !== 'pending') {
+      res.status(404).json({ error: 'Draft not found or already acted on' });
+      return;
+    }
+
+    let postedTweetId: string | undefined;
+
+    if (draft.type === 'thread' && draft.thread_tweets) {
+      const tweets = JSON.parse(draft.thread_tweets) as string[];
+      const mediaId = draft.image_buffer ? await uploadMedia(draft.image_buffer) : undefined;
+      const results = await postThread(tweets, mediaId);
+      postedTweetId = results[0].id;
+    } else if (draft.type === 'reply' && draft.reply_to_tweet_id) {
+      const mentionPrefix = draft.reply_to_username ? `@${draft.reply_to_username} ` : '';
+      const fullReply = draft.text.startsWith('@') ? draft.text : mentionPrefix + draft.text;
+      const result = await replyToTweet(fullReply, draft.reply_to_tweet_id);
+      postedTweetId = result.id;
+    } else if (draft.type === 'quote_tweet' && draft.reply_to_tweet_id) {
+      const result = await quoteTweet(draft.text, draft.reply_to_tweet_id);
+      postedTweetId = result.id;
+    } else {
+      const mediaId = draft.image_buffer ? await uploadMedia(draft.image_buffer) : undefined;
+      const result = await postToTwitter(draft.text, mediaId);
+      postedTweetId = result.id;
+    }
+
+    db.prepare(
+      `UPDATE post_drafts SET status = 'posted', posted_tweet_id = ?, acted_at = datetime('now') WHERE id = ?`,
+    ).run(postedTweetId ?? null, draft.id);
+
+    res.json({ success: true, tweetId: postedTweetId });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('Admin draft post error:', errorMsg);
+    res.status(500).json({ error: errorMsg });
+  }
+});
+
+// ------------------------------------------------------------------
+// POST /admin/drafts/:id/skip — Skip a draft
+// ------------------------------------------------------------------
+router.post('/drafts/:id/skip', (req, res) => {
+  try {
+    const result = db
+      .prepare(
+        `UPDATE post_drafts SET status = 'skipped', acted_at = datetime('now') WHERE id = ? AND status = 'pending'`,
+      )
+      .run(req.params.id);
+
+    if (result.changes === 0) {
+      res.status(404).json({ error: 'Draft not found or already acted on' });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Admin draft skip error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

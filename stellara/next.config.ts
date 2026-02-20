@@ -1,10 +1,25 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig: NextConfig = {
-  output: "export",
+  // Static export only in production builds — dev server needs rewrites for API proxy
+  ...(isDev ? {} : { output: "export" }),
   images: {
     unoptimized: true,
   },
+  ...(isDev
+    ? {
+        async rewrites() {
+          return [
+            {
+              source: "/api-proxy/:path*",
+              destination: "https://api.stellera.co/:path*",
+            },
+          ];
+        },
+      }
+    : {}),
 };
 
 export default nextConfig;

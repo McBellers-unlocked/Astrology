@@ -116,4 +116,24 @@ try { db.exec(`ALTER TABLE users ADD COLUMN utm_campaign TEXT`); } catch { /* ex
 try { db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`); } catch { /* exists */ }
 try { db.exec(`ALTER TABLE reply_log ADD COLUMN source_type TEXT DEFAULT 'general'`); } catch { /* exists */ }
 
+// Draft queue for manual posting mode (DRAFT_MODE=true)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS post_drafts (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    type                TEXT NOT NULL,
+    text                TEXT NOT NULL,
+    sign                TEXT,
+    thread_tweets       TEXT,
+    reply_to_tweet_id   TEXT,
+    reply_to_username   TEXT,
+    reply_to_text       TEXT,
+    image_buffer        BLOB,
+    source_type         TEXT,
+    status              TEXT NOT NULL DEFAULT 'pending',
+    posted_tweet_id     TEXT,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    acted_at            TEXT
+  );
+`);
+
 export default db;
