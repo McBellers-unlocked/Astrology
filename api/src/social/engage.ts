@@ -7,7 +7,7 @@
  *   Tier 3: General astrology — broad keyword pool for reach (engagement-sorted)
  *
  * Safety guards:
- * - Max 8 replies + 2 QTs per run, 35/day cap
+ * - Max 5 replies + 2 QTs per run, 40/day cap
  * - Never replies to the same tweet twice (reply_log table)
  * - Never replies to the same author twice per day
  * - Skips own tweets
@@ -32,11 +32,11 @@ const insertDraft = db.prepare(
 );
 
 // --- Volume knobs ---
-const MAX_REPLIES_PER_RUN = 8;           // was 15 — halved to reduce account activity
+const MAX_REPLIES_PER_RUN = 5;           // 5 per run × 8 runs/day = 40 daily cap
 const QUOTE_TWEETS_PER_RUN = 2;          // was 5
 const REPLY_DELAY_MS = 30_000;           // was 15_000 — slower to look more human
 const MIN_LIKES_FOR_QT = 25;
-const DAILY_CAP = 35;                    // was 75 — halved to reduce account activity
+const DAILY_CAP = 40;                    // 40 replies/day — manual posting so safe
 const QUERIES_PER_RUN = 3;              // was 5 — now 1 crossover + 2 general (target queries always run in addition)
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
