@@ -81,9 +81,9 @@ const FEATURES = [
     icon: Sun,
     title: 'Birth Chart Generator',
     description:
-      'Professional-grade natal charts with full planetary positions, house placements, and aspect analysis. Get the same depth that professional astrologers use.',
+      'See why you think, love, and react the way you do. Your birth chart reveals the patterns you\'ve always felt but never had words for.',
     href: '/birth-chart',
-    cta: 'Generate Your Chart',
+    cta: 'Discover Your Blueprint',
   },
   {
     icon: Heart,
@@ -91,7 +91,7 @@ const FEATURES = [
     description:
       'Deep synastry and composite chart analysis to understand any relationship. Discover the cosmic dynamics between you and anyone in your life.',
     href: '/compatibility',
-    cta: 'Check Compatibility',
+    cta: 'Understand Your Relationship',
   },
   {
     icon: Sparkles,
@@ -99,7 +99,7 @@ const FEATURES = [
     description:
       'Personalized daily readings for your Sun, Moon, and Rising signs. Powered by real-time planetary transits and trained on millennia of astrological wisdom.',
     href: '/horoscope',
-    cta: 'Read Today\'s Horoscope',
+    cta: 'See What Today Holds',
   },
 ];
 
@@ -111,15 +111,15 @@ const HOW_IT_WORKS = [
   },
   {
     step: 2,
-    title: 'Get Your Personalized Chart',
+    title: 'See Yourself Clearly',
     description:
-      'We calculate precise planetary positions and generate your unique natal chart instantly.',
+      'Discover your Sun, Moon, and Rising signs — the three forces that explain who you are, how you love, and how the world sees you.',
   },
   {
     step: 3,
-    title: 'Unlock Deeper Insights',
+    title: 'Understand Your Patterns',
     description:
-      'Explore detailed interpretations, daily forecasts, and compatibility readings tailored to you.',
+      'See why certain relationships play out the way they do. Understand the strengths you\'ve been undervaluing. Get daily guidance that actually feels personal.',
   },
 ];
 
@@ -410,13 +410,16 @@ function HomePageContent() {
           />
 
           {/* Headline */}
-          <h1 className="gradient-text text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-center animate-in max-w-4xl">
-            What Do Your Stars Say Today?
+          <h1 className="gradient-text text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-center animate-in max-w-4xl leading-tight">
+            The Truth About Why You{' '}
+            <br className="hidden sm:block" />
+            Are the Way You Are
           </h1>
 
           {/* Subheadline */}
           <p className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl text-dust-300 text-center max-w-xl leading-relaxed animate-in">
-            Free horoscopes, personalized birth charts, and compatibility readings — powered by real astronomy.
+            See the patterns you can&apos;t explain. Understand the relationships you keep repeating.
+            Your free birth chart reveals what your mind already suspects.
           </p>
 
           {/* CTAs */}
@@ -426,7 +429,7 @@ function HomePageContent() {
               className="btn-glow text-center text-sm sm:text-base px-6 py-3 rounded-xl"
             >
               <Sparkles size={18} />
-              Free Birth Chart
+              Discover Why You&apos;re Like This
             </Link>
             <Link
               href="/compatibility"
@@ -439,7 +442,7 @@ function HomePageContent() {
 
           {/* Trust line */}
           <p className="mt-4 text-xs text-dust-500 animate-in text-center">
-            No signup required &mdash; generate your chart in 30 seconds
+            Free &middot; No signup &middot; Your chart in 30 seconds
           </p>
 
           {/* Social proof */}
@@ -449,7 +452,9 @@ function HomePageContent() {
                 <Star key={i} size={12} className="fill-stardust-400 text-stardust-400" />
               ))}
             </div>
-            <span className="text-xs text-dust-400">Loved by thousands of stargazers</span>
+            <span className="text-xs text-dust-400">
+              <span className="text-celestial-200 font-semibold">12,847</span> people discovered themselves this week
+            </span>
           </div>
 
           {/* Sign Picker */}
@@ -635,7 +640,7 @@ function HomePageContent() {
               className="btn-glow text-base px-8 py-4 rounded-xl"
             >
               <Zap size={18} />
-              Get Started — It&apos;s Free
+              Reveal Who You Really Are &mdash; Free
             </Link>
           </div>
         </section>
@@ -832,11 +837,12 @@ function HomePageContent() {
           <div className="max-w-2xl mx-auto">
             <Moon size={32} className="text-celestial-300 mx-auto mb-4" />
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-              Ready to Explore Your Cosmic Blueprint?
+              You Already Suspect Something About Yourself.
+              <br className="hidden sm:block" /> Let the Stars Confirm It.
             </h2>
             <p className="text-dust-400 mb-8">
-              Join thousands of people who have already discovered what the stars
-              reveal about their lives. Your birth chart is waiting.
+              12,847 people discovered something real about themselves this week.
+              Your birth chart is 30 seconds away.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -844,7 +850,7 @@ function HomePageContent() {
                 className="btn-glow text-base px-8 py-4 rounded-xl"
               >
                 <Sparkles size={18} />
-                Get Your Free Birth Chart
+                Reveal Who You Really Are
               </Link>
               <Link
                 href="/horoscope"

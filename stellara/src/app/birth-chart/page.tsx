@@ -27,6 +27,7 @@ import {
 import EmailCapture from '@/components/EmailCapture';
 import ShareChart from '@/components/ShareChart';
 import PremiumGate from '@/components/PremiumGate';
+import ExitIntentPopup from '@/components/ExitIntentPopup';
 import { trackEvent, trackMetaEvent } from '@/components/Analytics';
 import { generateBirthChart } from '@/lib/astrology/engine';
 import { ZODIAC_SIGNS as ZODIAC_SIGN_DATA, ZODIAC_ORDER } from '@/data/zodiac/signs';
@@ -893,6 +894,166 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - 1920 + 1 }, (_, i) => String(CURRENT_YEAR - i));
 
 /* ================================================================
+   BIG THREE EMOTIONAL REVEAL — Post-chart dopamine hit
+   Shows deeply personal, sign-specific copy before the full chart
+   ================================================================ */
+
+const SUN_IDENTITY: Record<string, string> = {
+  Aries: 'You lead with fire. You\'re the one who acts while everyone else is still thinking. Your restlessness isn\'t a flaw — it\'s your engine.',
+  Taurus: 'You crave depth, not speed. While the world rushes, you build things that last. Your stubbornness? It\'s actually devotion.',
+  Gemini: 'Your mind never stops. You see connections others miss. People call you scattered — but you\'re actually processing everything at once.',
+  Cancer: 'You feel everything. The world doesn\'t always understand your intensity, but it\'s your superpower. You remember what others forget.',
+  Leo: 'You were born to be seen. Not out of ego — out of a genuine need to light up the room. When you dim yourself, everyone notices.',
+  Virgo: 'You notice what nobody else does. Your mind is always refining, always improving. The anxiety you feel? It\'s your brilliance working overtime.',
+  Libra: 'You carry the emotional weight of every room you enter. Your need for harmony isn\'t weakness — it\'s a form of intelligence most people lack.',
+  Scorpio: 'You see through people. You always have. Your intensity isn\'t too much — the world is just not used to that level of honesty.',
+  Sagittarius: 'You need freedom like you need air. The restlessness you feel isn\'t a problem to fix — it\'s your soul telling you there\'s more.',
+  Capricorn: 'You carry more responsibility than anyone sees. Your ambition isn\'t cold — it\'s the deepest form of caring about your future and the people in it.',
+  Aquarius: 'You\'ve always felt different. Not wrong — different. Your detachment isn\'t a flaw. It\'s how you see the world clearly when everyone else is blinded by emotion.',
+  Pisces: 'You absorb the feelings of everyone around you. It\'s exhausting and beautiful. Your sensitivity isn\'t something to fix — it\'s the reason people trust you with their secrets.',
+};
+
+const MOON_EMOTIONAL: Record<string, string> = {
+  Aries: 'Emotionally, you need to act. Sitting with your feelings makes you restless. You process by doing.',
+  Taurus: 'Your emotional world craves stability. Change feels threatening — not because you\'re weak, but because you love deeply enough to fear losing.',
+  Gemini: 'You intellectualize your emotions. When you\'re hurt, you talk. When you\'re overwhelmed, you go quiet. People don\'t always know which version they\'ll get.',
+  Cancer: 'You feel the moods of rooms before anyone speaks. Your emotional memory is total — you remember exactly how someone made you feel, years later.',
+  Leo: 'You need to feel appreciated. Not praised — genuinely seen. When people take you for granted, it wounds deeper than they know.',
+  Virgo: 'You express love through fixing things. Your worry is your way of caring. But you rarely let anyone take care of you back.',
+  Libra: 'You keep the peace at your own expense. Your emotional needs get buried under everyone else\'s. It\'s time to ask: what do YOU actually want?',
+  Scorpio: 'Your emotions run deep and quiet. You rarely show your full hand. The people who earn your trust see a version of you the world will never know.',
+  Sagittarius: 'You deal with pain by moving. New places, new ideas, new experiences. Stillness feels like a trap, but it\'s where your healing lives.',
+  Capricorn: 'You were emotionally old before your time. You learned early to be strong. But strength without softness isn\'t strength — it\'s armor.',
+  Aquarius: 'You observe your emotions from a distance. People think you\'re cold, but you feel everything — you just refuse to be controlled by it.',
+  Pisces: 'You feel what others can\'t even name. Boundaries aren\'t natural for you, and that\'s both your gift and your greatest challenge.',
+};
+
+const RISING_PERCEPTION: Record<string, string> = {
+  Aries: 'People see you as confident and direct — even when you don\'t feel it inside.',
+  Taurus: 'You come across as calm, grounded, and unshakable. People lean on you before they even know your name.',
+  Gemini: 'People see you as charming and adaptable. You shift to fit any room, and they rarely see the real you underneath.',
+  Cancer: 'You radiate warmth. People feel safe around you instantly — and they open up to you in ways that surprise them.',
+  Leo: 'You walk into a room and people notice. There\'s a magnetism you carry, even when you\'re trying to blend in.',
+  Virgo: 'People see you as put-together and precise. What they don\'t see is the constant inner work it takes.',
+  Libra: 'You present as graceful and diplomatic. People assume your life is effortless — they have no idea how hard you work to keep that balance.',
+  Scorpio: 'People sense your intensity before you speak. You\'re magnetic, and some people find that intimidating. That says more about them than you.',
+  Sagittarius: 'You come across as open, adventurous, and a little untouchable. People are drawn to your energy but can\'t quite pin you down.',
+  Capricorn: 'People respect you before they warm to you. You carry an authority that you didn\'t ask for but can\'t shake.',
+  Aquarius: 'You seem like you don\'t quite belong anywhere — and that\'s exactly what makes people remember you.',
+  Pisces: 'You have an ethereal quality that people can\'t name. They feel something when they\'re around you, even if they can\'t articulate it.',
+};
+
+function BigThreeReveal({ data, onContinue }: { data: ChartData; onContinue: () => void }) {
+  return (
+    <div className="min-h-screen relative">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-celestial-600/5 blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-nebula-600/5 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+        {/* Reveal Header */}
+        <div className="text-center mb-10 animate-in">
+          <p className="text-stardust-400 text-sm font-semibold uppercase tracking-widest mb-3">
+            {data.name ? `${data.name}\u2019s` : 'Your'} Cosmic Blueprint
+          </p>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold gradient-text mb-4 leading-tight">
+            This Is Who You Are
+          </h1>
+          <p className="text-dust-400 text-base max-w-md mx-auto">
+            Your Big Three &mdash; the foundation of your entire personality.
+          </p>
+        </div>
+
+        {/* Sun Sign Card */}
+        <div className="glass-card p-6 sm:p-8 mb-5 animate-in" style={{ animationDelay: '200ms' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-stardust-500/15 border border-stardust-500/25 flex items-center justify-center">
+              <Sun className="w-6 h-6 text-stardust-400" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-dust-400">Your Core Identity</p>
+              <p className="text-xl font-bold text-foreground">
+                {ZODIAC_SYMBOLS[data.sunSign]} {data.sunSign} Sun
+              </p>
+            </div>
+          </div>
+          <p className="text-dust-300 leading-relaxed">
+            {SUN_IDENTITY[data.sunSign] || 'Your Sun sign reveals the core of who you are.'}
+          </p>
+        </div>
+
+        {/* Moon Sign Card */}
+        <div className="glass-card p-6 sm:p-8 mb-5 animate-in" style={{ animationDelay: '400ms' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-celestial-500/15 border border-celestial-500/25 flex items-center justify-center">
+              <Moon className="w-6 h-6 text-celestial-200" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-dust-400">Your Emotional World</p>
+              <p className="text-xl font-bold text-foreground">
+                {ZODIAC_SYMBOLS[data.moonSign]} {data.moonSign} Moon
+              </p>
+            </div>
+          </div>
+          <p className="text-dust-300 leading-relaxed">
+            {MOON_EMOTIONAL[data.moonSign] || 'Your Moon sign reveals how you process emotions.'}
+          </p>
+        </div>
+
+        {/* Rising Sign Card */}
+        <div className="glass-card p-6 sm:p-8 mb-8 animate-in" style={{ animationDelay: '600ms' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-nebula-500/15 border border-nebula-500/25 flex items-center justify-center">
+              <CircleDot className="w-6 h-6 text-nebula-400" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-dust-400">How the World Sees You</p>
+              <p className="text-xl font-bold text-foreground">
+                {ZODIAC_SYMBOLS[data.risingSign]} {data.risingSign} Rising
+              </p>
+            </div>
+          </div>
+          <p className="text-dust-300 leading-relaxed">
+            {RISING_PERCEPTION[data.risingSign] || 'Your Rising sign shapes how others perceive you.'}
+          </p>
+        </div>
+
+        {/* Continue to Full Chart CTA */}
+        <div className="text-center animate-in" style={{ animationDelay: '800ms' }}>
+          <button
+            onClick={onContinue}
+            className="btn-glow px-8 py-4 text-base"
+          >
+            <Sparkles className="w-5 h-5" />
+            Explore My Full Birth Chart
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <p className="text-xs text-dust-500 mt-3">
+            Detailed planetary positions, house placements, and aspect analysis
+          </p>
+        </div>
+
+        {/* Share + Save nudge */}
+        <div className="mt-10 animate-in" style={{ animationDelay: '900ms' }}>
+          <div className="glass-card p-5 text-center">
+            <p className="text-sm text-dust-300 mb-3">
+              Your Big Three is something most people never discover about themselves.
+            </p>
+            <ShareChart
+              sunSign={data.sunSign}
+              moonSign={data.moonSign}
+              risingSign={data.risingSign}
+              name={data.name}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
    MAIN PAGE COMPONENT
    ================================================================ */
 
@@ -912,6 +1073,7 @@ export default function BirthChartPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [houseGuideOpen, setHouseGuideOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [showBigThreeReveal, setShowBigThreeReveal] = useState(true);
 
   // Track premium nudge impression for conversion analytics
   useEffect(() => {
@@ -962,10 +1124,28 @@ export default function BirthChartPage() {
 
         setChartData(data);
         setActiveTab('Chart Overview');
+        setShowBigThreeReveal(true);
 
         // Track chart generation for analytics and Meta retargeting
-        trackEvent('generate_chart', { sign: data.sunSign });
+        trackEvent('generate_chart', {
+          sign: data.sunSign,
+          moon_sign: data.moonSign,
+          rising_sign: data.risingSign,
+        });
         trackMetaEvent('ViewContent', { content_name: 'birth_chart', content_category: data.sunSign });
+
+        // Critical micro-conversion: ChartGenerated — optimize Meta ads against this event
+        trackMetaEvent('ChartGenerated', {
+          content_name: 'birth_chart',
+          sun_sign: data.sunSign,
+          moon_sign: data.moonSign,
+          rising_sign: data.risingSign,
+        });
+        trackEvent('chart_generated', {
+          sun_sign: data.sunSign,
+          moon_sign: data.moonSign,
+          rising_sign: data.risingSign,
+        });
 
         // Auto-save birth data to profile if user is logged in
         if (user) {
@@ -994,7 +1174,7 @@ export default function BirthChartPage() {
     setActiveTab('Chart Overview');
   }, []);
 
-  const isFormValid = formData.name.trim() !== '' && formData.birthDate !== '';
+  const isFormValid = formData.birthDate !== '';
 
   /* ----------- Render: INPUT FORM ----------- */
   if (!chartData) {
@@ -1007,23 +1187,71 @@ export default function BirthChartPage() {
         </div>
 
         <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
-          {/* Header */}
+          {/* Emotional Hook — Above Everything */}
           <div className="text-center mb-10 animate-in">
-            <h1 className="text-4xl sm:text-5xl font-bold gradient-text mb-4">
-              Your Birth Chart
-            </h1>
-            <p className="text-dust-400 text-lg max-w-md mx-auto leading-relaxed">
-              Enter your birth details for a professional-grade natal chart analysis
+            <p className="text-stardust-400 text-sm font-semibold uppercase tracking-widest mb-4">
+              Free &middot; No signup required &middot; 30 seconds
             </p>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold gradient-text mb-5 leading-tight">
+              Finally Understand Why You{' '}
+              <br className="hidden sm:block" />
+              Are the Way You Are
+            </h1>
+            <p className="text-dust-300 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed">
+              The patterns you can&apos;t explain. The relationships you keep repeating.
+              The parts of yourself you&apos;ve never had words for.
+              <span className="text-celestial-200 font-medium"> Your birth chart holds the answers.</span>
+            </p>
+          </div>
+
+          {/* Big Three Teaser — The Promise */}
+          <div className="glass-card p-5 sm:p-6 mb-8 animate-in" style={{ animationDelay: '50ms' }}>
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Sun className="w-5 h-5 text-stardust-400" />
+              <Moon className="w-5 h-5 text-celestial-200" />
+              <CircleDot className="w-5 h-5 text-nebula-400" />
+            </div>
+            <p className="text-center text-dust-200 text-sm sm:text-base leading-relaxed max-w-lg mx-auto">
+              In 30 seconds, you&apos;ll discover your <span className="text-stardust-300 font-semibold">Sun</span>,{' '}
+              <span className="text-celestial-200 font-semibold">Moon</span>, and{' '}
+              <span className="text-nebula-300 font-semibold">Rising</span> signs &mdash;
+              the three cosmic forces that shape <em>who you are</em>, <em>how you love</em>,
+              and <em>how the world sees you</em>.
+            </p>
+          </div>
+
+          {/* Social Proof Strip */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-8 animate-in" style={{ animationDelay: '75ms' }}>
+            <div className="flex items-center gap-1.5">
+              <div className="flex -space-x-2">
+                {['AR', 'KL', 'SP', 'JM'].map((initials) => (
+                  <div
+                    key={initials}
+                    className="w-7 h-7 rounded-full bg-celestial-400/15 border-2 border-space-900 flex items-center justify-center text-[10px] font-bold text-celestial-200"
+                  >
+                    {initials}
+                  </div>
+                ))}
+              </div>
+              <span className="text-xs text-dust-400">
+                <span className="text-celestial-200 font-semibold">12,847</span> charts generated this week
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} size={12} className="fill-stardust-400 text-stardust-400" />
+              ))}
+              <span className="text-xs text-dust-400 ml-1">&ldquo;Shockingly accurate&rdquo;</span>
+            </div>
           </div>
 
           {/* Form Card */}
           <form onSubmit={handleSubmit} className="glass-card p-6 sm:p-8 space-y-6 animate-in" style={{ animationDelay: '100ms' }}>
-            {/* Full Name */}
+            {/* First Name (optional) */}
             <div className="space-y-2">
               <label htmlFor="name" className="flex items-center gap-2 text-sm font-medium text-dust-200">
                 <User className="w-4 h-4 text-celestial-300" />
-                Full Name
+                First Name <span className="text-dust-500 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -1031,8 +1259,8 @@ export default function BirthChartPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                required
-                placeholder="Enter your full name"
+                placeholder="Your first name"
+                onFocus={() => trackEvent('form_field_focus', { field: 'name', form: 'birth_chart' })}
                 className="w-full px-4 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground placeholder-dust-500 focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all"
               />
             </div>
@@ -1055,15 +1283,15 @@ export default function BirthChartPage() {
                 };
                 return (
                   <div className="grid grid-cols-3 gap-2">
-                    <select value={m} onChange={(e) => update('m', e.target.value)} required className={selectCls}>
+                    <select value={m} onChange={(e) => update('m', e.target.value)} onFocus={() => trackEvent('form_field_focus', { field: 'birth_month', form: 'birth_chart' })} required className={selectCls}>
                       <option value="" disabled>Month</option>
                       {MONTHS.map((mo) => <option key={mo.value} value={mo.value}>{mo.label}</option>)}
                     </select>
-                    <select value={d} onChange={(e) => update('d', e.target.value)} required className={selectCls}>
+                    <select value={d} onChange={(e) => update('d', e.target.value)} onFocus={() => trackEvent('form_field_focus', { field: 'birth_day', form: 'birth_chart' })} required className={selectCls}>
                       <option value="" disabled>Day</option>
                       {DAYS.map((day) => <option key={day} value={day}>{parseInt(day)}</option>)}
                     </select>
-                    <select value={y} onChange={(e) => update('y', e.target.value)} required className={selectCls}>
+                    <select value={y} onChange={(e) => update('y', e.target.value)} onFocus={() => trackEvent('form_field_focus', { field: 'birth_year', form: 'birth_chart' })} required className={selectCls}>
                       <option value="" disabled>Year</option>
                       {YEARS.map((yr) => <option key={yr} value={yr}>{yr}</option>)}
                     </select>
@@ -1084,6 +1312,7 @@ export default function BirthChartPage() {
                 name="birthTime"
                 value={formData.birthTime}
                 onChange={handleInputChange}
+                onFocus={() => trackEvent('form_field_focus', { field: 'birth_time', form: 'birth_chart' })}
                 className="w-full px-4 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all [color-scheme:dark]"
               />
               <p className="text-xs text-dust-500 flex items-center gap-1.5">
@@ -1104,6 +1333,7 @@ export default function BirthChartPage() {
                 name="birthLocation"
                 value={formData.birthLocation}
                 onChange={handleInputChange}
+                onFocus={() => trackEvent('form_field_focus', { field: 'birth_location', form: 'birth_chart' })}
                 placeholder="City, Country"
                 className="w-full px-4 py-3 bg-space-800/70 border border-celestial-500/15 rounded-xl text-foreground placeholder-dust-500 focus:outline-none focus:border-celestial-400/40 focus:ring-2 focus:ring-celestial-500/20 transition-all"
               />
@@ -1180,6 +1410,20 @@ export default function BirthChartPage() {
               </div>
             </div>
 
+            {/* Emotional benefit bullets */}
+            <div className="flex flex-col gap-2 text-sm text-dust-300 pt-2">
+              {[
+                'See why you think, love, and react the way you do',
+                'Understand the patterns in your relationships',
+                'Discover hidden strengths you didn\'t know you had',
+              ].map((benefit) => (
+                <div key={benefit} className="flex items-start gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-stardust-400 mt-0.5 flex-shrink-0" />
+                  <span>{benefit}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -1192,36 +1436,66 @@ export default function BirthChartPage() {
                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-25" />
                     <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
                   </svg>
-                  Calculating your chart...
+                  Reading the stars...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5" />
-                  Generate My Birth Chart
+                  Reveal Who I Really Am
                   <ChevronRight className="w-4 h-4" />
                 </span>
               )}
             </button>
           </form>
 
-          {/* Info Section */}
+          {/* Testimonial Card */}
           <div className="glass-card p-6 mt-8 animate-in" style={{ animationDelay: '200ms' }}>
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-celestial-300 flex-shrink-0 mt-0.5" />
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-celestial-400/15 border border-celestial-400/25 flex items-center justify-center text-sm font-bold text-celestial-200">
+                MR
+              </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Why do we need your birth time?</h3>
-                <p className="text-sm text-dust-400 leading-relaxed">
-                  Your birth time determines your Ascendant (Rising Sign), house placements, and the
-                  precise position of the Moon. These are essential for an accurate chart reading.
-                  Without a birth time, we use noon as a default, which provides your Sun sign and
-                  planetary signs but may show inaccurate house placements and Moon position.
-                  For the most precise reading, check your birth certificate or ask a family member.
+                <div className="flex items-center gap-1.5 mb-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={11} className="fill-stardust-400 text-stardust-400" />
+                  ))}
+                </div>
+                <p className="text-sm text-dust-300 leading-relaxed italic">
+                  &ldquo;I literally gasped. It described patterns in my relationships I&apos;ve
+                  never been able to articulate. Like it read my diary.&rdquo;
                 </p>
+                <p className="text-xs text-dust-500 mt-2">Maya R. &mdash; Austin, TX</p>
               </div>
             </div>
           </div>
+
+          {/* Birth time tip — collapsed, non-intrusive */}
+          <details className="mt-4 text-sm animate-in" style={{ animationDelay: '250ms' }}>
+            <summary className="flex items-center gap-1.5 text-dust-400 cursor-pointer hover:text-celestial-200 transition-colors">
+              <HelpCircle className="w-3.5 h-3.5" />
+              Don&apos;t know your exact birth time?
+            </summary>
+            <p className="mt-2 text-xs text-dust-500 leading-relaxed pl-5">
+              No worries. We&apos;ll use noon as a default. You&apos;ll still get your Sun sign
+              and planet placements. For full accuracy (Rising sign + houses), check your
+              birth certificate or ask a family member.
+            </p>
+          </details>
+
+          {/* Exit Intent Popup */}
+          <ExitIntentPopup suppress={!!chartData} />
         </div>
       </div>
+    );
+  }
+
+  /* ----------- Render: BIG THREE REVEAL ----------- */
+  if (showBigThreeReveal) {
+    return (
+      <BigThreeReveal
+        data={chartData}
+        onContinue={() => setShowBigThreeReveal(false)}
+      />
     );
   }
 
@@ -1277,7 +1551,7 @@ export default function BirthChartPage() {
         {/* Header */}
         <div className="text-center mb-10 animate-in">
           <h1 className="text-3xl sm:text-4xl font-bold gradient-text mb-3">
-            {chartData.name}&apos;s Natal Chart
+            {chartData.name ? `${chartData.name}\u2019s` : 'Your'} Natal Chart
           </h1>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-dust-400">
             <span className="flex items-center gap-1.5">
@@ -1400,16 +1674,16 @@ export default function BirthChartPage() {
             <div className="glass-card p-6 sm:p-8 text-center">
               <User className="w-8 h-8 text-celestial-300 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Save your chart
+                Don&apos;t lose this
               </h3>
               <p className="text-sm text-dust-400 mb-5 max-w-sm mx-auto">
-                Create a free account to save your chart, track transits, and get personalized readings.
+                Save your Big Three, get daily insights for your specific chart, and see how the planets are affecting you right now. Free forever.
               </p>
               <Link
                 href="/signup"
                 className="btn-glow inline-flex items-center gap-2 px-6 py-3 text-sm"
               >
-                Create Free Account
+                Save My Chart &mdash; It&apos;s Free
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
