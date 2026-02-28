@@ -23,6 +23,7 @@ import {
   Mountain,
   Wind,
   Droplets,
+  Loader2,
 } from 'lucide-react';
 import EmailCapture from '@/components/EmailCapture';
 import ShareChart from '@/components/ShareChart';
@@ -33,6 +34,7 @@ import { generateBirthChart } from '@/lib/astrology/engine';
 import { ZODIAC_SIGNS as ZODIAC_SIGN_DATA, ZODIAC_ORDER } from '@/data/zodiac/signs';
 import { geocodeLocation } from '@/lib/geocoding';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import type {
   BirthChartData,
   HouseSystem as EngineHouseSystem,
@@ -829,48 +831,88 @@ function AspectsTab({ data }: { data: ChartData }) {
   );
 }
 
-function FullReportTab() {
+function getFullReportPreview(data: ChartData) {
+  const mercury = data.planets.find(p => p.planet === 'Mercury');
+  const venus = data.planets.find(p => p.planet === 'Venus');
+  const mars = data.planets.find(p => p.planet === 'Mars');
+
+  return {
+    previewText: `Your ${data.sunSign} Sun combined with a ${data.moonSign} Moon creates a personality that few people truly understand. This report reveals the full picture \u2014 including how your ${data.risingSign} Rising shapes the way others misread you.`,
+    mercury: mercury ? `With Mercury in ${mercury.sign}, your mind works in ways that ${mercury.sign === 'Gemini' || mercury.sign === 'Virgo' ? 'are razor-sharp and analytical' : mercury.sign === 'Pisces' || mercury.sign === 'Cancer' ? 'are deeply intuitive and emotionally intelligent' : mercury.sign === 'Aries' || mercury.sign === 'Sagittarius' ? 'move fast and cut to the truth' : 'balance logic with deeper knowing'}. Your communication style has a signature that this report fully decodes.` : null,
+    venus: venus ? `Venus in ${venus.sign} reveals how you love \u2014 and what you secretly need from a partner that you may never have articulated. This placement shapes your deepest relationship patterns.` : null,
+    mars: mars ? `Mars in ${mars.sign} drives your ambition, your anger, and your desire. Understanding this placement changes how you pursue everything that matters to you.` : null,
+  };
+}
+
+function FullReportTab({ data }: { data: ChartData }) {
+  const preview = getFullReportPreview(data);
+  const { user } = useAuth();
+  const [trialLoading, setTrialLoading] = useState(false);
+
+  const handleStartTrial = async () => {
+    if (!user) {
+      window.location.href = '/signup';
+      return;
+    }
+    setTrialLoading(true);
+    try {
+      trackEvent('begin_checkout', { tier: 'stellar', interval: 'month', location: 'full_report_tab' });
+      trackMetaEvent('InitiateCheckout', { content_name: 'stellar', value: 9.99 });
+      const result = await api.post<{ url: string }>('/checkout/create-session', {
+        tier: 'stellar',
+        interval: 'month',
+      });
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err) {
+      console.error('Checkout failed:', err);
+      setTrialLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in">
       <h3 className="text-xl font-semibold text-celestial-100 mb-4 flex items-center gap-2">
         <Crown className="w-5 h-5 text-stardust-400" />
-        Full Birth Chart Report
+        {data.name ? `${data.name}\u2019s` : 'Your'} Full Birth Chart Report
       </h3>
 
       <PremiumGate
         requiredTier="stellar"
         featureName="your full birth chart report"
-        previewText="Your natal chart reveals a complex tapestry of planetary influences that shape your personality, relationships, career path, and spiritual evolution. The unique arrangement of celestial bodies at the moment of your birth creates a cosmic blueprint that is entirely yours."
+        previewText={preview.previewText}
       >
         <div className="glass-card p-6 space-y-4">
-          <p className="text-dust-200 leading-relaxed">
-            Your Mercury placement indicates a mind that processes information through intuitive
-            channels rather than pure logic. You possess a rare ability to synthesize complex
-            ideas and communicate them with emotional depth that resonates with others on a
-            profound level.
-          </p>
-          <p className="text-dust-200 leading-relaxed">
-            Venus in your chart suggests a deeply romantic nature combined with a strong aesthetic
-            sensibility. Your approach to love is characterized by loyalty and intensity, though
-            you may struggle with vulnerability in the early stages of relationships.
-          </p>
-          <p className="text-dust-200 leading-relaxed">
-            The Mars placement reveals your driving force and how you assert yourself in the
-            world. Your particular configuration suggests a strategic approach to ambition, one
-            that values sustainability over quick victories.
-          </p>
-          <p className="text-dust-200 leading-relaxed">
-            Jupiter&apos;s influence in your chart expands your natural talents and brings opportunities
-            for growth in areas related to higher learning, philosophy, and travel. Saturn&apos;s position
-            provides structure and discipline, teaching you to build lasting foundations.
-          </p>
-          <p className="text-dust-200 leading-relaxed">
-            The outer planets — Uranus, Neptune, and Pluto — colour your generational experience
-            and deeper spiritual journey. Their house positions reveal where in your life you
-            will encounter transformation, awakening, and transcendence.
-          </p>
+          {preview.mercury && <p className="text-dust-200 leading-relaxed">{preview.mercury}</p>}
+          {preview.venus && <p className="text-dust-200 leading-relaxed">{preview.venus}</p>}
+          {preview.mars && <p className="text-dust-200 leading-relaxed">{preview.mars}</p>}
         </div>
       </PremiumGate>
+
+      {user && !user.subscriptionTier?.match(/stellar|cosmic/) && (
+        <div className="text-center pt-2">
+          <button
+            onClick={handleStartTrial}
+            disabled={trialLoading}
+            className="btn-glow inline-flex items-center gap-2 px-6 py-3 text-sm"
+          >
+            {trialLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Unlock {data.name ? `${data.name}\u2019s` : 'Your'} Full Report
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+          <p className="text-xs text-dust-500 mt-2">7-day free trial, then $9.99/month. Cancel anytime.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -943,7 +985,61 @@ const RISING_PERCEPTION: Record<string, string> = {
   Pisces: 'You have an ethereal quality that people can\'t name. They feel something when they\'re around you, even if they can\'t articulate it.',
 };
 
-function BigThreeReveal({ data, onContinue }: { data: ChartData; onContinue: () => void }) {
+const PREMIUM_TEASERS: Record<string, string> = {
+  Aries: 'Your Aries fire is being shaped by a transit that won\'t come again for 12 years. Your full chart reveals exactly when to act.',
+  Taurus: 'There\'s a tension between your Taurus stability and what your Moon is asking you to release. Your full report shows how to navigate it.',
+  Gemini: 'Your Gemini duality runs deeper than most people realize. Your planetary aspects reveal which side of you is about to take the lead.',
+  Cancer: 'Your Cancer intuition is picking up on something real right now. Your transits confirm what you\'ve been feeling.',
+  Leo: 'Your Leo confidence masks a vulnerability your Moon sign is amplifying this month. Your full chart explains the disconnect.',
+  Virgo: 'Your Virgo mind is overanalyzing something your chart says you should trust. The answer is in your Venus placement.',
+  Libra: 'Your Libra desire for balance is about to be tested. Your Saturn transit reveals exactly what\'s shifting.',
+  Scorpio: 'Your Scorpio intensity isn\'t random \u2014 it\'s being activated by a Pluto aspect that peaks soon. Your full chart has the timeline.',
+  Sagittarius: 'Your Sagittarius restlessness has a purpose right now. Jupiter in your chart is opening a door that\'s been closed for years.',
+  Capricorn: 'Your Capricorn discipline is about to pay off in a way you can\'t see yet. Your full chart reveals the timing.',
+  Aquarius: 'Your Aquarius independence is being challenged by what your heart actually wants. Your Venus-Moon aspect tells the real story.',
+  Pisces: 'Your Pisces intuition is stronger than usual \u2014 and your Neptune transit explains why. Your full chart reveals what you\'re sensing.',
+};
+
+function BigThreeReveal({ data, onContinue, user, isPremium }: {
+  data: ChartData;
+  onContinue: () => void;
+  user: ReturnType<typeof useAuth>['user'];
+  isPremium: boolean;
+}) {
+  const [trialLoading, setTrialLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isPremium) {
+      trackEvent('view_premium_teaser', {
+        location: 'big_three_reveal',
+        sun_sign: data.sunSign,
+        moon_sign: data.moonSign,
+      });
+    }
+  }, [isPremium, data.sunSign, data.moonSign]);
+
+  const handleStartTrial = async () => {
+    if (!user) {
+      window.location.href = '/signup';
+      return;
+    }
+    setTrialLoading(true);
+    try {
+      trackEvent('begin_checkout', { tier: 'stellar', interval: 'month', location: 'big_three_reveal' });
+      trackMetaEvent('InitiateCheckout', { content_name: 'stellar', value: 9.99 });
+      const result = await api.post<{ url: string }>('/checkout/create-session', {
+        tier: 'stellar',
+        interval: 'month',
+      });
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err) {
+      console.error('Checkout failed:', err);
+      setTrialLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen relative">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -1019,6 +1115,42 @@ function BigThreeReveal({ data, onContinue }: { data: ChartData; onContinue: () 
           </p>
         </div>
 
+        {/* Premium Teaser — peak emotional moment */}
+        {!isPremium && (
+          <div className="glass-card p-6 sm:p-8 mb-8 animate-in border border-stardust-500/20 bg-gradient-to-r from-stardust-600/5 to-nebula-600/5" style={{ animationDelay: '700ms' }}>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Crown className="h-5 w-5 text-stardust-400" />
+                <span className="text-xs uppercase tracking-widest text-stardust-400 font-semibold">Your Full Cosmic Story</span>
+              </div>
+              <p className="text-dust-200 leading-relaxed text-sm mb-4 max-w-md mx-auto">
+                {PREMIUM_TEASERS[data.sunSign] || 'Your birth chart holds insights that go far beyond your Big Three. Your full report reveals the complete picture.'}
+              </p>
+              <button
+                onClick={handleStartTrial}
+                disabled={trialLoading}
+                className="btn-glow inline-flex items-center gap-2 px-6 py-3 text-sm"
+              >
+                {trialLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Start Free 7-Day Trial
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-dust-500 mt-2">
+                $9.99/month after trial. Cancel anytime.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Continue to Full Chart CTA */}
         <div className="text-center animate-in" style={{ animationDelay: '800ms' }}>
           <button
@@ -1074,6 +1206,29 @@ export default function BirthChartPage() {
   const [houseGuideOpen, setHouseGuideOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [showBigThreeReveal, setShowBigThreeReveal] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleInlineCheckout = async () => {
+    if (!user) {
+      window.location.href = '/signup';
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      trackEvent('begin_checkout', { tier: 'stellar', interval: 'month', location: 'birth_chart_nudge' });
+      trackMetaEvent('InitiateCheckout', { content_name: 'stellar', value: 9.99 });
+      const result = await api.post<{ url: string }>('/checkout/create-session', {
+        tier: 'stellar',
+        interval: 'month',
+      });
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err) {
+      console.error('Checkout failed:', err);
+      setCheckoutLoading(false);
+    }
+  };
 
   // Track premium nudge impression for conversion analytics
   useEffect(() => {
@@ -1495,6 +1650,8 @@ export default function BirthChartPage() {
       <BigThreeReveal
         data={chartData}
         onContinue={() => setShowBigThreeReveal(false)}
+        user={user}
+        isPremium={isPremium}
       />
     );
   }
@@ -1574,6 +1731,28 @@ export default function BirthChartPage() {
           </div>
         </div>
 
+        {/* Compact premium banner — above the chart for immediate visibility */}
+        {user && !isPremium && chartData && (
+          <div className="mb-8 mx-auto max-w-2xl animate-in glass-card p-4 border border-stardust-500/15 text-center">
+            <p className="text-sm text-dust-300 mb-3">
+              Your {chartData.sunSign} Sun + {chartData.moonSign} Moon combination is rare.{' '}
+              <span className="text-stardust-400 font-medium">See what it means in your full report.</span>
+            </p>
+            <button
+              onClick={handleInlineCheckout}
+              disabled={checkoutLoading}
+              className="btn-glow inline-flex items-center gap-2 px-5 py-2 text-xs"
+            >
+              {checkoutLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              Try Premium Free for 7 Days
+            </button>
+          </div>
+        )}
+
         {/* Two-column layout: Chart + Tabs */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-8">
           {/* Visual Chart */}
@@ -1624,7 +1803,7 @@ export default function BirthChartPage() {
               {activeTab === 'Planetary Positions' && <PlanetaryPositionsTab data={chartData} />}
               {activeTab === 'Houses' && <HousesTab data={chartData} />}
               {activeTab === 'Aspects' && <AspectsTab data={chartData} />}
-              {activeTab === 'Full Report' && <FullReportTab />}
+              {activeTab === 'Full Report' && <FullReportTab data={chartData} />}
             </div>
           </div>
         </div>
@@ -1655,14 +1834,27 @@ export default function BirthChartPage() {
                   Unlock daily Moon &amp; Rising horoscopes, your complete chart analysis,
                   and personalized transit alerts.
                 </p>
-                <Link
-                  href="/pricing"
+                <button
+                  onClick={handleInlineCheckout}
+                  disabled={checkoutLoading}
                   className="btn-glow inline-flex items-center gap-2 px-6 py-3 text-sm"
                 >
-                  <Sparkles className="h-4 w-4" />
-                  Start Your 7-Day Free Trial
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
+                  {checkoutLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Start Your 7-Day Free Trial
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-dust-500 mt-2">
+                  $9.99/month after trial. Cancel anytime.
+                </p>
               </div>
             </div>
           </div>
